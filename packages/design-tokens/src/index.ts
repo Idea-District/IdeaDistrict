@@ -42,3 +42,16 @@ export const confidenceColor: Record<Confidence, string> = {
 };
 
 export type ColorToken = keyof typeof colors;
+
+/**
+ * Logo 01 from the brand book: a solid block with the I and the D knocked out,
+ * so the D reads as a doorway. Fill it with `colors.ember`; the knock-outs are holes.
+ */
+export const brandMark = {
+  viewBox: "0 0 391.74 286.14",
+  aspectRatio: 391.74 / 286.14,
+  path:
+    "M0,0 H391.74 V286.14 H0 Z M37.68,29.5 H109.06 V256.64 H37.68 Z " +
+    "M235.62,256.64 H141.52 V29.5 H235.62 C306.68,29.5 354.06,72 354.06,143.07 " +
+    "C354.06,214.13 306.68,256.64 235.62,256.64 Z",
+} as const;

@@ -1,13 +1,25 @@
 from fastapi import APIRouter
 
-from app.api.v1.routes import health
+from app.api.v1.routes import (
+    conversations,
+    discovery,
+    founder_id,
+    founders,
+    health,
+    outcomes,
+    privacy,
+    recommendations,
+)
 
 api_router = APIRouter(prefix="/v1")
 api_router.include_router(health.router)
+api_router.include_router(founders.router)
+api_router.include_router(discovery.router)
+api_router.include_router(founder_id.router)
+api_router.include_router(recommendations.router)
+api_router.include_router(outcomes.router)
+api_router.include_router(conversations.router)
+api_router.include_router(privacy.router)
 
-# Feature routers are added here as they are built:
-#   discovery        — context answers, situations, choices        (demo)
-#   id               — Person, State, Gaps for the signed-in user  (demo)
-#   recommendations  — intersections, no-match, Tell me more       (demo)
-#   admin            — human review of proposed matches
-#   conversations    — messaging opened by accepted introductions
+# Still to come: admin (human review of proposed matches) and auth (Supabase phone OTP
+# replaces the demo's founder_id).

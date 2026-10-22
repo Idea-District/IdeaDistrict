@@ -11,8 +11,10 @@ What run() guarantees, from the traps already hit in the prototypes:
 """
 
 import json
+import threading
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from string import Template
 
@@ -58,13 +60,17 @@ class AIClient:
         self.db = db
         self.provider = provider
         self.max_attempts = max_attempts
+        # Calls may run on worker threads (e.g. the two ID-build calls in parallel);
+        # the session is not thread-safe, so every database touch takes this lock.
+        self._db_lock = threading.Lock()
 
     def prompt(self, key: str) -> Prompt:
-        row = self.db.scalar(
-            select(PromptVersion)
-            .where(PromptVersion.key == key, PromptVersion.active.is_(True))
-            .order_by(PromptVersion.activated_at.desc())
-        )
+        with self._db_lock:
+            row = self.db.scalar(
+                select(PromptVersion)
+                .where(PromptVersion.key == key, PromptVersion.active.is_(True))
+                .order_by(PromptVersion.activated_at.desc())
+            )
         if row:
             return Prompt(key=key, version=row.version, system=row.body, model=row.model)
         return Prompt(key=key, version="file", system=load_default_prompt(key), model=None)
@@ -78,7 +84,9 @@ class AIClient:
         schema: dict,
         user_id: uuid.UUID | None = None,
         max_output_tokens: int = 1500,
+        validate: Callable[[dict], None] | None = None,
     ) -> dict:
+        """`validate` raises ValueError for a well-formed but unusable reply; that is retried too."""
         prompt = self.prompt(prompt_key)
         request = ProviderRequest(
             purpose=purpose,
@@ -101,6 +109,8 @@ class AIClient:
                     raise ValueError(f"output truncated at {max_output_tokens} tokens")
                 data = extract_json(response.text)
                 check_required(data, schema)
+                if validate:
+                    validate(data)
             except Exception as exc:  # noqa: BLE001 — every failure is logged, then retried once
                 last_error = f"{type(exc).__name__}: {exc}"
                 self._log(purpose, prompt, response, started, user_id, "failed", last_error)
@@ -111,6 +121,10 @@ class AIClient:
         raise AIError(f"{purpose} failed after {self.max_attempts} attempts — {last_error}")
 
     def _log(self, purpose, prompt, response, started, user_id, status, error=None) -> None:
+        with self._db_lock:
+            self._write_log(purpose, prompt, response, started, user_id, status, error)
+
+    def _write_log(self, purpose, prompt, response, started, user_id, status, error) -> None:
         self.db.add(
             AiCall(
                 user_id=user_id,

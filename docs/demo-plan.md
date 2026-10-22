@@ -26,8 +26,18 @@ Deploying is optional and only after everything below works.
 | 13 | Someone you should meet | `/for-you` | NEED → CAPABILITY, four explanations |
 | 14 | Nothing this week + **Tell me more** | `/for-you` | adds a secondary facet, ID updates |
 
-Out of the demo: messaging, outcome survey, profile/consent screen, admin review, login, whiteboard.
-Tabs shown in the shell: For you · Messages (empty state) · You.
+Also built after the first demo pass:
+
+| # | Screen | Route | Notes |
+|---|---|---|---|
+| 15 | Messages | `/messages`, `/messages/[id]` | opened only by an accepted introduction; origin line pinned |
+| 16 | Did that go anywhere? | `/for-you`, thread | three taps; a useful meeting becomes VALIDATED evidence |
+| 17 | You — consent | `/you` | investor visibility off by default; pausing introductions works both ways |
+| — | Does this ring true? | `/id` | saved; the core-assumption metric |
+
+Out of the demo: admin review of matches (matches are auto-approved and flagged), login, whiteboard.
+`OUTCOME_SURVEY_DELAY_DAYS=0` in `services/api/.env` makes the survey appear right after an introduction.
+Tabs shown in the shell: For you · Messages · You.
 
 ## API for the demo
 
@@ -41,6 +51,13 @@ Tabs shown in the shell: For you · Messages (empty state) · You.
 | GET | `/v1/id` | Person, State, Gaps for the founder |
 | GET | `/v1/recommendations` | one intersection or a no-match with reasons |
 | POST | `/v1/id/tell-me-more` | free text → declared signals (facet-tagged) → ID refresh |
+| POST | `/v1/id/rings-true` | "Does this ring true?" answer → interactions log, shown on the ID |
+| GET/POST | `/v1/privacy` | consent switches; `allow_introductions=false` removes them from matching both ways |
+| POST | `/v1/recommendations/{id}/respond` | accept → opens a conversation and returns its id |
+| GET | `/v1/conversations` · `/v1/conversations/{id}` | threads with unread counts; reading marks read |
+| POST | `/v1/conversations/{id}/messages` | send; only metadata goes to interactions, never message bodies |
+| GET | `/v1/outcomes/pending` | introductions due for "Did that go anywhere?" |
+| POST | `/v1/recommendations/{id}/outcome` | three taps → outcome row; useful meeting → VALIDATED signal |
 
 Every endpoint writes to `interactions`; every AI call goes through `AIClient` and lands in `ai_calls`.
 

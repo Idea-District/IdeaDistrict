@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  // Hidden for demos; compile and runtime errors still surface.
+  devIndicators: false,
   partialPrefetching: true,
   // Workspace packages ship TypeScript source; Next compiles them.
   transpilePackages: ["@idea-district/design-tokens", "@idea-district/api-client"],
