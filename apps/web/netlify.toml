@@ -1,9 +1,10 @@
-# Netlify settings for the web app. In the Netlify UI set Base directory = apps/web.
+# Netlify settings for the web app (project to deploy: apps/web).
+# Netlify resolves `publish` from the repository root, not from apps/web.
 # NEXT_PUBLIC_API_URL (the Render API URL) must be set in Site settings → Environment
 # variables before the build: Next.js bakes it into the browser bundle.
 [build]
   command = "pnpm run build"
-  publish = ".next"
+  publish = "apps/web/.next"
 
 [build.environment]
   NODE_VERSION = "20"
