@@ -93,7 +93,13 @@ export type FounderID = {
 export type TellMeMoreInput = { founder_id: string; text: string };
 
 // ── Recommendations ─────────────────────────────────────────────────────
-export type MatchPerson = { name: string; building: string; stage: string; city: string };
+export type MatchPerson = {
+  name: string;
+  building: string;
+  stage: string;
+  city: string;
+  role: "founder" | "investor"; // investors are only ever suggested as funding introductions
+};
 
 export type Recommendation =
   | {

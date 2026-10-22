@@ -97,7 +97,8 @@ def test_match_with_another_founder_and_respond(client, db):
 
     rec = client.get("/v1/recommendations", params={"founder_id": founder_id}).json()
     assert rec["kind"] == "match"
-    assert rec["person"] == {"name": "Vikram Shetty", "building": "AI tools for CA firms", "stage": "Pre-seed", "city": "Bengaluru"}
+    assert rec["person"] == {"name": "Vikram Shetty", "building": "AI tools for CA firms", "stage": "Pre-seed",
+                             "city": "Bengaluru", "role": "founder"}
     # Asking again without an ID change reuses the answer instead of another AI call.
     assert client.get("/v1/recommendations", params={"founder_id": founder_id}).json()["id"] == rec["id"]
 

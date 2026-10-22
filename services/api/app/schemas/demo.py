@@ -128,6 +128,7 @@ class MatchPerson(BaseModel):
     building: str
     stage: str
     city: str
+    role: Literal["founder", "investor"] = "founder"
 
 
 class MatchOut(BaseModel):

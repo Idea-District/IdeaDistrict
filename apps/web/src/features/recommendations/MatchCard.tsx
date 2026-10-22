@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import type { Recommendation } from "@idea-district/api-client";
 
-import { Avatar, Button, ButtonLink, ConfidenceWord, ErrorNotice, Label } from "@/components/ui";
+import { Avatar, Button, ButtonLink, ConfidenceWord, ErrorNotice, Label, Tag } from "@/components/ui";
 import { api } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
 import { personLine } from "@/lib/format";
@@ -52,7 +52,10 @@ export function MatchCard({ founderId, rec, onLookAgain }: { founderId: string; 
       <div className="mt-4 flex items-center gap-3.5">
         <Avatar name={p.name} />
         <div>
-          <h1 className="text-[22px] font-extrabold leading-tight tracking-[-0.03em]">{p.name}</h1>
+          <h1 className="flex items-center gap-2 text-[22px] font-extrabold leading-tight tracking-[-0.03em]">
+            {p.name}
+            {p.role === "investor" && <Tag kind="declared">Investor</Tag>}
+          </h1>
           <p className="mt-0.5 text-[13px] text-ink3">
             {personLine(p)}
           </p>

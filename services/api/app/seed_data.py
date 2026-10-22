@@ -194,6 +194,18 @@ MORE_FOUNDERS = [
        [("Delegation", "You trust leads with whole cities once they hit targets.", "medium", 0.55, "3 of 5 decisions")]),
 ]
 
+# Added after a matching check: a D2C founder asking about kirana stores had nobody to meet.
+MORE_FOUNDERS.append(
+    _p("suresh", "Suresh Babu", "Margdarshi Distribution",
+       "You grow by making shopkeepers money first; the brand's story comes second.",
+       [("project", "FMCG distribution to kirana stores across Bengaluru", "primary"),
+        ("stage", "Profitable, bootstrapped", "primary"),
+        ("offer", "General trade distribution to 1,200 kirana stores and a network of local distributors", "primary"),
+        ("offer", "Pricing, margins and schemes that get new brands onto kirana shelves", "primary"),
+        ("need", "New packaged food brands to carry, and software for route ordering", "primary")],
+       [("Decision making", "You judge a brand by its sell-through in the first month.", "medium", 0.55, "3 of 5 decisions")])
+)
+
 DEMO_INVESTORS = [
     _p("inv-ritu", "Ritu Kapoor", "Lantern Ventures",
        "You back technical founders early and judge speed of learning over traction.",

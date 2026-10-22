@@ -22,4 +22,5 @@ def person_card(db: Session, user: User) -> MatchPerson:
         building=first_value(state, "project", user.organisation or ""),
         stage=first_value(state, "stage"),
         city=user.city or "",
+        role="investor" if user.user_type == "investor" else "founder",
     )

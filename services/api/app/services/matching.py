@@ -19,6 +19,7 @@ from app.schemas.demo import MatchOut, NoMatchOut, RespondIn
 from app.services import interactions, messaging, privacy
 from app.services.ai.client import AIClient
 from app.services.errors import Conflict, NotFound
+from app.services.founders import founder_context
 from app.services.id_builder import HEADLINE, id_changed_at
 from app.services.people import current_state as _state
 from app.services.people import first_value as _first
@@ -71,8 +72,12 @@ def recommend(db: Session, ai: AIClient, founder: User) -> MatchOut | NoMatchOut
         return _no_match(db, founder.id, [FIRST_MEMBER_REASON], 0)
 
     aliases = {f"M{i + 1}": c for i, c in enumerate(candidates)}
+    seeker = _profile(db, founder, include_private=True)
+    seeker["in_their_own_words"] = {
+        k: v for k, v in founder_context(db, founder).items() if k in ("working_on", "hoping_for", "in_the_way", "more_about_them")
+    }
     variables = {
-        "the_founder": json.dumps(_profile(db, founder, include_private=True)),
+        "the_founder": json.dumps(seeker),
         "members": json.dumps(
             [{"alias": alias, **_profile(db, c, include_private=True)} for alias, c in aliases.items()]
         ),
@@ -84,7 +89,7 @@ def recommend(db: Session, ai: AIClient, founder: User) -> MatchOut | NoMatchOut
         schema=MATCH_SCHEMA,
         user_id=founder.id,
         max_output_tokens=900,
-        validate=lambda d: _check_match(d, aliases),
+        validate=lambda d: _check_match(d, aliases, founder),
     )
 
     alias = str(data.get("match", "")).strip().upper()
@@ -166,8 +171,12 @@ def _no_match(db: Session, founder_id: uuid.UUID, reasons: list[str], considered
 
 
 def _members_with_ids(db: Session) -> list[User]:
+    """Founders and investors with a built ID. Investors are only ever suggested as a funding
+    introduction (see the match prompt and _check_match); they never receive suggestions."""
     built = select(IdAttribute.user_id).distinct()
-    return list(db.scalars(select(User).where(User.id.in_(built), User.user_type == "founder")))
+    return list(
+        db.scalars(select(User).where(User.id.in_(built), User.user_type.in_(["founder", "investor"])))
+    )
 
 
 
@@ -177,7 +186,9 @@ def _profile(db: Session, user: User, include_private: bool) -> dict:
         select(IdAttribute).where(IdAttribute.user_id == user.id, IdAttribute.dimension != HEADLINE)
     )
     profile = {
+        "role": user.user_type,
         "name": user.name,
+        "organisation": user.organisation or "",
         "building": _first(state, "project", user.organisation or ""),
         "stage": _first(state, "stage"),
         "city": user.city or "",
@@ -190,10 +201,14 @@ def _profile(db: Session, user: User, include_private: bool) -> dict:
     return profile
 
 
-def _check_match(data: dict, aliases: dict) -> None:
+def _check_match(data: dict, aliases: dict, founder: User) -> None:
     alias = str(data.get("match", "")).strip().upper()
     if alias != "NONE" and alias not in aliases:
         raise ValueError(f"unknown member alias '{alias}'")
+    chosen = aliases.get(alias)
+    if chosen is not None and chosen.user_type == "investor" and "CAPITAL" not in str(data.get("match_type", "")).upper():
+        # An investor is only the right introduction when the founder needs funding.
+        raise ValueError("an investor can only be suggested as a funding (CAPITAL) introduction")
     if alias != "NONE" and not str(data.get("why_them", "")).strip():
         raise ValueError("a match needs a why_them")
 
