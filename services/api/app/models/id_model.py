@@ -64,6 +64,7 @@ class IdState(TableMixin, Base):
     facet: Mapped[str] = mapped_column(String(12), default="primary")
     value: Mapped[str] = mapped_column(Text)
     confidence: Mapped[str] = mapped_column(String(8))
+    source: Mapped[str] = mapped_column(String(12), default="inferred")  # declared | inferred | validated
     valid_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     superseded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

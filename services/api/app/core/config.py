@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     ai_provider: str = "mock"
     ai_api_key: str = ""
     ai_base_url: str = ""
+    ai_model: str = ""  # empty = the provider's default
+    ai_thinking_level: str = "LOW"  # Mila: HIGH | LOW. LOW keeps discovery fast on stage.
+    ai_timeout_seconds: float = 30.0
 
     # Discovery shape is configuration, not code (decision: 5 situations).
     situations_per_session: int = 5

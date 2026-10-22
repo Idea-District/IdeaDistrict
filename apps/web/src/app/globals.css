@@ -36,3 +36,25 @@ body {
   font-style: italic;
   color: var(--ember-deep);
 }
+
+@keyframes fadein {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.fade-in {
+  animation: fadein 420ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in,
+  .animate-pulse {
+    animation: none;
+  }
+}
