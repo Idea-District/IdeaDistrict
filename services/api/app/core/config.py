@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,6 +27,16 @@ class Settings(BaseSettings):
     outcome_survey_delay_days: int = 12
 
     cors_origins: str = "http://localhost:3100,http://localhost:8081"
+
+    @field_validator("database_url")
+    @classmethod
+    def use_psycopg_driver(cls, url: str) -> str:
+        """Hosts (Neon, Render, Supabase) hand out postgres:// or postgresql:// URLs; SQLAlchemy
+        needs the driver named. SQLite and already-explicit URLs pass through unchanged."""
+        for prefix in ("postgres://", "postgresql://"):
+            if url.startswith(prefix):
+                return "postgresql+psycopg://" + url[len(prefix):]
+        return url
 
     @property
     def cors_origin_list(self) -> list[str]:

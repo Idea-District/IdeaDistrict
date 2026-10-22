@@ -1,0 +1,26 @@
+# Render Blueprint for the API (free plan). Render → New → Blueprint → pick this repo.
+# The free plan sleeps after ~15 min idle; the first request then takes ~50 s.
+services:
+  - type: web
+    name: idea-district-api
+    runtime: python
+    plan: free
+    region: singapore # closest free region to India
+    rootDir: services/api
+    buildCommand: pip install .
+    # Migrations and seeding are idempotent, so they run on every start.
+    startCommand: alembic upgrade head && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /v1/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: DATABASE_URL # Neon connection string — paste in the dashboard
+        sync: false
+      - key: AI_PROVIDER
+        value: mila
+      - key: AI_API_KEY # Mila key — paste in the dashboard, never commit it
+        sync: false
+      - key: CORS_ORIGINS # the Netlify site URL, e.g. https://idea-district.netlify.app
+        sync: false
+      - key: OUTCOME_SURVEY_DELAY_DAYS
+        value: "0" # demo: ask "Did that go anywhere?" right after an introduction
