@@ -1,6 +1,7 @@
 """Seed data (idempotent):
 - default prompts → prompt_versions (a changed prompt file becomes a new active version)
-- six Bengaluru demo founders with built IDs, so matching has people to consider
+- sample members with built IDs: 30 founders (matching candidates) and 10 investors
+  (stored with user_type="investor"; investors are read-only in the MVP and not matched)
 
     python -m app.seed
 """
@@ -10,6 +11,7 @@ from sqlalchemy import select
 from app.db.session import SessionLocal
 from app.models import IdAttribute, IdState, PromptVersion, User, UserPrivacySettings
 from app.prompts import available_prompts, load_default_prompt
+from app.seed_data import DEMO_INVESTORS, MORE_FOUNDERS
 from app.services.id_builder import HEADLINE
 
 DEMO_EMAIL_DOMAIN = "ideadistrict.demo"
@@ -126,15 +128,24 @@ def seed_prompts() -> int:
 
 
 def seed_demo_founders() -> int:
+    return _seed_members(DEMO_FOUNDERS + MORE_FOUNDERS, "founder")
+
+
+def seed_demo_investors() -> int:
+    return _seed_members(DEMO_INVESTORS, "investor")
+
+
+def _seed_members(members: list[dict], user_type: str) -> int:
+    """Idempotent by email: people already present are skipped, never duplicated."""
     added = 0
     with SessionLocal() as db:
-        for f in DEMO_FOUNDERS:
+        for f in members:
             email = f"{f['slug']}@{DEMO_EMAIL_DOMAIN}"
             if db.scalar(select(User).where(User.email == email)):
                 continue
             user = User(
                 name=f["name"], email=email, organisation=f["organisation"], city="Bengaluru",
-                country="India", onboarding_stage="id_built",
+                country="India", onboarding_stage="id_built", user_type=user_type,
             )
             db.add(user)
             db.flush()
@@ -164,4 +175,7 @@ def seed_demo_founders() -> int:
 
 
 if __name__ == "__main__":
-    print(f"Seeded {seed_prompts()} prompt(s) and {seed_demo_founders()} demo founder(s).")
+    print(
+        f"Seeded {seed_prompts()} prompt(s), {seed_demo_founders()} founder(s) "
+        f"and {seed_demo_investors()} investor(s)."
+    )

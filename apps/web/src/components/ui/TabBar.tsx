@@ -39,7 +39,7 @@ export function TabBar() {
   const pathname = usePathname();
   const unread = useUnreadCount(useStored("founderId"));
   return (
-    <nav aria-label="Main" className="sticky bottom-0 border-t border-rule bg-cream/95 backdrop-blur">
+    <nav aria-label="Main" className="sticky bottom-0 border-t border-rule bg-screen/95 backdrop-blur">
       <ul className="flex">
         {tabs.map((t) => {
           const active = t.match.some((m) => pathname === m || pathname.startsWith(`${m}/`));

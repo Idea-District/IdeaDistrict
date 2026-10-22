@@ -3,6 +3,8 @@
 
 /* Tailwind utilities generated from the shared tokens: bg-cream, text-ember, font-inferred… */
 @theme inline {
+  --color-surround: var(--surround);
+  --color-screen: var(--screen);
   --color-cream: var(--cream);
   --color-card: var(--card);
   --color-sand: var(--sand);
@@ -25,7 +27,7 @@
 }
 
 body {
-  background: var(--cream);
+  background: var(--surround);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
 }
@@ -52,7 +54,23 @@ body {
   animation: fadein 420ms ease-out both;
 }
 
+/* The intro's ember introduction line breathes gently. */
+@keyframes link-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.intro-link {
+  animation: link-pulse 2.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .intro-link,
   .fade-in,
   .animate-pulse {
     animation: none;

@@ -1,5 +1,7 @@
 /* Same values as src/index.ts, as CSS variables for the web app. Keep them in sync. */
 :root {
+  --surround: #d5cdba; /* behind the app, as in prototype v0.2 — softer than a near-white page */
+  --screen: #f7f3ea; /* the app surface */
   --cream: #f5f1ea;
   --card: #ffffff;
   --sand: #ebe6da;

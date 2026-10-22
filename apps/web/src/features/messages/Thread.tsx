@@ -89,7 +89,7 @@ export function Thread({ founderId, conversationId }: { founderId: string; conve
   }
 
   const composer = (
-    <form onSubmit={send} className="sticky bottom-0 border-t border-rule bg-cream/95 px-4 py-3 backdrop-blur">
+    <form onSubmit={send} className="sticky bottom-0 border-t border-rule bg-screen/95 px-4 py-3 backdrop-blur">
       {sendError ? (
         <p role="alert" className="mb-2 text-[12.5px] text-ember-deep">
           Not sent. {sendError}

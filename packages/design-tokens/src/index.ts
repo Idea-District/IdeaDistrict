@@ -8,7 +8,9 @@
  */
 
 export const colors = {
-  cream: "#F5F1EA", // app background
+  surround: "#D5CDBA", // behind the app (prototype v0.2); softer on the eyes than a near-white page
+  screen: "#F7F3EA", // the app surface
+  cream: "#F5F1EA",
   card: "#FFFFFF",
   sand: "#EBE6DA", // secondary surfaces
   sand2: "#F7F3EA",
