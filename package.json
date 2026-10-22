@@ -1,0 +1,25 @@
+{
+  "name": "idea-district",
+  "private": true,
+  "packageManager": "pnpm@9.11.0",
+  "engines": {
+    "node": ">=20.9"
+  },
+  "scripts": {
+    "dev": "turbo run dev --filter=web --filter=api",
+    "dev:web": "turbo run dev --filter=web",
+    "dev:mobile": "pnpm --filter mobile run start",
+    "dev:api": "pnpm --filter api run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "api:bootstrap": "pnpm --filter api run bootstrap",
+    "db:migrate": "pnpm --filter api run migrate",
+    "db:seed": "pnpm --filter api run seed",
+    "db:reset": "pnpm --filter api run reset"
+  },
+  "devDependencies": {
+    "turbo": "2.11.10"
+  }
+}

@@ -1,0 +1,38 @@
+@import "tailwindcss";
+@import "@idea-district/design-tokens/tokens.css";
+
+/* Tailwind utilities generated from the shared tokens: bg-cream, text-ember, font-inferred… */
+@theme inline {
+  --color-cream: var(--cream);
+  --color-card: var(--card);
+  --color-sand: var(--sand);
+  --color-sand2: var(--sand2);
+  --color-ink: var(--ink);
+  --color-ink2: var(--ink2);
+  --color-ink3: var(--ink3);
+  --color-rule: var(--rule);
+  --color-rule2: var(--rule2);
+  --color-ember: var(--ember);
+  --color-ember-deep: var(--ember-deep);
+  --color-ember-tint: var(--ember-tint);
+  --color-espresso: var(--espresso);
+  --color-espresso2: var(--espresso2);
+  --color-good: var(--good);
+  --color-mid: var(--mid);
+
+  --font-sans: var(--font-archivo), system-ui, sans-serif;
+  --font-inferred: var(--font-newsreader), Georgia, serif;
+}
+
+body {
+  background: var(--cream);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The product's one typographic rule: what the system worked out. */
+.inferred {
+  font-family: var(--font-inferred);
+  font-style: italic;
+  color: var(--ember-deep);
+}

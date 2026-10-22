@@ -1,0 +1,19 @@
+/* Same values as src/index.ts, as CSS variables for the web app. Keep them in sync. */
+:root {
+  --cream: #f5f1ea;
+  --card: #ffffff;
+  --sand: #ebe6da;
+  --sand2: #f7f3ea;
+  --ink: #21150b;
+  --ink2: #565b57;
+  --ink3: #8e8579;
+  --rule: #d5cdba;
+  --rule2: #e4ded1;
+  --ember: #fe4202;
+  --ember-deep: #9c3305;
+  --ember-tint: #fdede5;
+  --espresso: #21150b;
+  --espresso2: #2d2117;
+  --good: #3f6b4a;
+  --mid: #9a6212;
+}
