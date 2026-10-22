@@ -9,6 +9,8 @@ from app.services.ai.providers.base import ProviderRequest, ProviderResponse
 _SITUATIONS = [
     {
         "consequence": "",
+        "dimension": "Decision making",
+        "gap_question": "How you decide when resources are tight.",
         "why_asking": "We know what you're building and what's in the way. We don't yet know how you decide when resources are tight.",
         "situation": "You have ₹50 lakh and four months before you need to raise again. Two strong engineers in Bengaluru would join tomorrow.",
         "question": "What do you do first?",
@@ -21,6 +23,8 @@ _SITUATIONS = [
     },
     {
         "consequence": "Your choice bought clarity, but one of the engineers took another offer while you decided.",
+        "dimension": "Execution vs learning",
+        "gap_question": "Whether you build first or learn first under pressure.",
         "why_asking": "We've seen how you spend under pressure. We don't yet know whether you build first or learn first when the product wobbles.",
         "situation": "Customers love the idea, but your first version breaks every few days. A big customer wants a pilot next month.",
         "question": "What do you do?",
@@ -33,6 +37,8 @@ _SITUATIONS = [
     },
     {
         "consequence": "The pilot went ahead in some form, and the customer asked for features you hadn't planned.",
+        "dimension": "Control vs partnership",
+        "gap_question": "How much control you trade for capability.",
         "why_asking": "We're learning how you balance speed and quality. We don't yet know how much control you trade for help.",
         "situation": "A larger company offers to distribute your product to 2,000 businesses — if they get a say in your roadmap.",
         "question": "How do you respond?",
@@ -45,6 +51,8 @@ _SITUATIONS = [
     },
     {
         "consequence": "The partnership question settled for now, and a new opportunity appeared in another city.",
+        "dimension": "Risk orientation",
+        "gap_question": "How much risk you take when the upside is large.",
         "why_asking": "We know how you treat partners. We don't yet know how much risk you take when the upside is large.",
         "situation": "An investor offers to double your round if you launch in Hyderabad within eight weeks. Your team is already stretched.",
         "question": "What do you do?",
@@ -57,6 +65,8 @@ _SITUATIONS = [
     },
     {
         "consequence": "Your growth plan moved forward, and your senior advisor disagrees with it strongly.",
+        "dimension": "Conflict handling",
+        "gap_question": "How you handle disagreement with someone senior.",
         "why_asking": "We know a lot about how you decide. We don't yet know how you handle disagreement with someone senior.",
         "situation": "Your most experienced advisor tells your team, in a meeting, that your plan is wrong.",
         "question": "What do you do next?",

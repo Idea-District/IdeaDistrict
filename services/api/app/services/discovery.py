@@ -66,6 +66,7 @@ SITUATION_SCHEMA = {
         "situation": {"type": "string"},
         "question": {"type": "string"},
         "dimension": {"type": "string"},
+        "gap_question": {"type": "string"},
         "options": {
             "type": "array",
             "items": {
@@ -79,7 +80,7 @@ SITUATION_SCHEMA = {
             },
         },
     },
-    "required": ["consequence", "why_asking", "situation", "question", "options"],
+    "required": ["dimension", "gap_question", "consequence", "why_asking", "situation", "question", "options"],
 }
 
 
@@ -133,12 +134,7 @@ def known_unknown(db: Session, founder: User) -> KnownUnknown:
 
 
 def _open_gaps(db: Session, founder_id: uuid.UUID) -> list[UnknownItem]:
-    gaps = db.scalars(
-        select(InformationGap)
-        .where(InformationGap.user_id == founder_id, InformationGap.status == "open")
-        .order_by(InformationGap.priority, InformationGap.created_at)
-    )
-    return [UnknownItem(dimension=g.dimension, label=g.question) for g in gaps]
+    return [UnknownItem(dimension=g.dimension, label=g.question) for g in _open_gap_rows(db, founder_id)]
 
 
 # ── Sessions and situations ─────────────────────────────────────────────
@@ -192,16 +188,20 @@ def next_situation(db: Session, ai: AIClient, founder: User | None, session_id: 
     if answered >= session.situation_count:
         raise Conflict("Discovery is complete — build the ID next.")
 
-    gap = _next_gap(db, founder.id)
-    dimension = gap.dimension if gap else "Decision making"
+    # The AI chooses what to learn next from the open gaps (or names a new one the
+    # founder's answers raised). Priorities are guidance, not a fixed order.
+    open_gaps = _open_gap_rows(db, founder.id)
+    last_dimension = latest.dimension_targeted if latest else None
     variables = {
         **founder_context(db, founder),
-        "gap_to_probe": json.dumps(
-            {"dimension": dimension, "what_we_dont_know": gap.question if gap else "How you decide under pressure."}
+        "open_gaps": json.dumps(
+            [{"dimension": g.dimension, "what_we_dont_know": g.question, "priority": g.priority} for g in open_gaps]
         ),
+        "last_dimension_probed": last_dimension or "none yet",
         "situation_number": f"{answered + 1} of {session.situation_count}",
         "previous_situations": json.dumps(_history(db, session.id)),
     }
+    prompt = ai.prompt("situation")
     data = ai.run(
         purpose="situation",
         prompt_key="situation",
@@ -209,8 +209,10 @@ def next_situation(db: Session, ai: AIClient, founder: User | None, session_id: 
         schema=SITUATION_SCHEMA,
         user_id=founder.id,
         max_output_tokens=1400,
-        validate=_check_situation,
+        validate=lambda d: _check_situation(d, open_gaps, last_dimension),
     )
+    gap, chosen_from = _gap_for_choice(db, founder.id, open_gaps, data)
+    dimension = gap.dimension
 
     options = [
         {"id": letter, "text": _clean(o["text"]), "signal": _clean(o["signal"])}
@@ -226,14 +228,20 @@ def next_situation(db: Session, ai: AIClient, founder: User | None, session_id: 
         options=options,
         dimension_targeted=dimension,
         model_used=ai.provider.name,
-        prompt_version="situation",
+        prompt_version=f"{prompt.key}@{prompt.version}",
     )
     db.add(situation)
-    if gap:
-        gap.status = "probing"
+    gap.status = "probing"
     db.flush()
     interactions.record(
-        db, "situation_shown", user_id=founder.id, entity_type="situation", entity_id=situation.id, sequence_no=situation.sequence_no
+        db,
+        "situation_shown",
+        user_id=founder.id,
+        entity_type="situation",
+        entity_id=situation.id,
+        sequence_no=situation.sequence_no,
+        dimension=dimension,
+        topic_chosen_from=chosen_from,  # "open_gap" or "new_gap": how adaptive discovery really is
     )
     db.commit()
     return _view(session, situation)
@@ -311,7 +319,8 @@ def _clean(text) -> str:
     return _BROKEN_RUPEE.sub("₹", str(text or "")).strip()
 
 
-def _check_situation(data: dict) -> None:
+def _check_situation(data: dict, open_gaps: list[InformationGap], last_dimension: str | None) -> None:
+    """Raising here makes the AI client retry once, with the reason logged in ai_calls."""
     options = data.get("options")
     if not isinstance(options, list) or len(options) < 4:
         raise ValueError(f"expected 4 options, got {len(options) if isinstance(options, list) else 'none'}")
@@ -320,13 +329,54 @@ def _check_situation(data: dict) -> None:
     if not str(data.get("situation", "")).strip():
         raise ValueError("empty situation")
 
+    dimension = _key(data.get("dimension"))
+    if not dimension:
+        raise ValueError("no dimension chosen")
+    if last_dimension and dimension == _key(last_dimension):
+        raise ValueError(f"probed '{last_dimension}' twice in a row")
+    is_open_gap = any(_key(g.dimension) == dimension for g in open_gaps)
+    if not is_open_gap and not str(data.get("gap_question", "")).strip():
+        raise ValueError(f"new dimension '{data.get('dimension')}' needs a gap_question")
 
-def _next_gap(db: Session, founder_id: uuid.UUID) -> InformationGap | None:
-    return db.scalar(
-        select(InformationGap)
-        .where(InformationGap.user_id == founder_id, InformationGap.status == "open")
-        .order_by(InformationGap.priority, InformationGap.created_at)
+
+def _gap_for_choice(
+    db: Session, founder_id: uuid.UUID, open_gaps: list[InformationGap], data: dict
+) -> tuple[InformationGap, str]:
+    """The gap the AI chose: an open one, an earlier one it returned to, or a new one it raised."""
+    dimension = _key(data["dimension"])
+    for gap in open_gaps:
+        if _key(gap.dimension) == dimension:
+            return gap, "open_gap"
+    earlier = db.scalar(
+        select(InformationGap).where(
+            InformationGap.user_id == founder_id, func.lower(InformationGap.dimension) == dimension
+        )
     )
+    if earlier is not None:
+        return earlier, "revisited_gap"
+    gap = InformationGap(
+        user_id=founder_id,
+        dimension=_clean(data["dimension"])[:60],
+        question=_clean(data["gap_question"]),
+        why_it_matters="Raised by your earlier answers.",
+        priority=1,
+    )
+    db.add(gap)
+    return gap, "new_gap"
+
+
+def _open_gap_rows(db: Session, founder_id: uuid.UUID) -> list[InformationGap]:
+    return list(
+        db.scalars(
+            select(InformationGap)
+            .where(InformationGap.user_id == founder_id, InformationGap.status == "open")
+            .order_by(InformationGap.priority, InformationGap.created_at)
+        )
+    )
+
+
+def _key(dimension) -> str:
+    return " ".join(str(dimension or "").lower().split())
 
 
 def _latest_situation(db: Session, session_id: uuid.UUID) -> Situation | None:

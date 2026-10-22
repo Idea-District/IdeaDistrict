@@ -1,5 +1,5 @@
 """Seed data (idempotent):
-- default prompts → prompt_versions
+- default prompts → prompt_versions (a changed prompt file becomes a new active version)
 - six Bengaluru demo founders with built IDs, so matching has people to consider
 
     python -m app.seed
@@ -12,7 +12,6 @@ from app.models import IdAttribute, IdState, PromptVersion, User, UserPrivacySet
 from app.prompts import available_prompts, load_default_prompt
 from app.services.id_builder import HEADLINE
 
-SEED_VERSION = "v1"
 DEMO_EMAIL_DOMAIN = "ideadistrict.demo"
 
 # Each founder: profile, State (field, value, facet), Person (dimension, insight, confidence, strength, evidence).
@@ -108,15 +107,19 @@ DEMO_FOUNDERS = [
 
 
 def seed_prompts() -> int:
+    """Adds v1, v2… per key whenever the file differs from the active version.
+    Older versions are kept (inactive) so every past signal still traces to its prompt."""
     added = 0
     with SessionLocal() as db:
         for key in available_prompts():
-            exists = db.scalar(
-                select(PromptVersion).where(PromptVersion.key == key, PromptVersion.version == SEED_VERSION)
-            )
-            if exists:
+            body = load_default_prompt(key)
+            versions = list(db.scalars(select(PromptVersion).where(PromptVersion.key == key)))
+            active = next((v for v in versions if v.active), None)
+            if active is not None and active.body == body:
                 continue
-            db.add(PromptVersion(key=key, version=SEED_VERSION, body=load_default_prompt(key), active=True))
+            for v in versions:
+                v.active = False
+            db.add(PromptVersion(key=key, version=f"v{len(versions) + 1}", body=body, active=True))
             added += 1
         db.commit()
     return added
