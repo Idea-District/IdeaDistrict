@@ -101,8 +101,9 @@ def test_match_with_another_founder_and_respond(client, db):
     # Asking again without an ID change reuses the answer instead of another AI call.
     assert client.get("/v1/recommendations", params={"founder_id": founder_id}).json()["id"] == rec["id"]
 
-    assert client.post(f"/v1/recommendations/{rec['id']}/respond",
-                       json={"founder_id": founder_id, "response": "accept"}).json() == {"ok": True}
+    accepted = client.post(f"/v1/recommendations/{rec['id']}/respond",
+                           json={"founder_id": founder_id, "response": "accept"}).json()
+    assert accepted["ok"] is True and accepted["conversation_id"]
     assert db.get(Recommendation, _uuid(rec["id"])).status == "accepted"
 
 

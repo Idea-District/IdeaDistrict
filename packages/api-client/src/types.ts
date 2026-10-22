@@ -6,7 +6,7 @@ export type Health = {
   ai_provider: string;
 };
 
-export type ApiErrorBody = { error: string; detail?: string };
+export type ApiErrorBody = { error?: string; detail?: string | unknown[] };
 
 export type Confidence = "low" | "medium" | "high";
 export type Facet = "primary" | "secondary";
@@ -76,6 +76,8 @@ export type PersonAttribute = {
 
 export type Gap = { dimension: string; question: string; why_it_matters: string; status: "open" | "probing" | "closed" };
 
+export type RingsTrue = "yes" | "partly" | "no";
+
 export type FounderID = {
   founder: Founder;
   decisions: number; // situations answered
@@ -85,6 +87,7 @@ export type FounderID = {
   person: PersonAttribute[];
   gaps: Gap[];
   overall_confidence: "developing" | "established";
+  rings_true: RingsTrue | null; // the founder's latest answer to "Does this ring true?"
 };
 
 export type TellMeMoreInput = { founder_id: string; text: string };
@@ -110,3 +113,47 @@ export type Recommendation =
     };
 
 export type RecommendationResponse = { founder_id: string; response: "accept" | "decline" };
+// Accepting an introduction opens a conversation between the two founders.
+export type RespondResult = { ok: true; conversation_id: string | null };
+
+// ── Privacy (consent as data; investor visibility is opt-in) ────────────
+export type Privacy = {
+  id_visible_to_investors: boolean;
+  state_visible_to_investors: boolean;
+  allow_introductions: boolean;
+};
+
+// ── Messaging (opened only by an accepted introduction) ─────────────────
+export type ChatMessage = { id: string; from_me: boolean; body: string; sent_at: string };
+
+export type ConversationSummary = {
+  id: string;
+  with: MatchPerson;
+  origin: string; // why they were introduced — pinned at the top of the thread
+  last_message: string | null;
+  last_message_at: string | null;
+  unread: number;
+};
+
+export type Conversation = {
+  id: string;
+  with: MatchPerson;
+  origin: string;
+  introduced_at: string;
+  messages: ChatMessage[];
+};
+
+// ── Outcomes ("Did that go anywhere?", asked a while after an introduction) ──
+export type PendingOutcome = { recommendation_id: string; with: MatchPerson; introduced_at: string };
+
+export type OutcomeInput = {
+  founder_id: string;
+  did_meet: boolean;
+  was_useful: "not_really" | "yes" | "very" | null; // null when they didn't meet
+  will_talk_again: "already" | "maybe" | "no" | null;
+};
+
+export type OutcomeResult = {
+  validated: boolean; // true when this outcome became VALIDATED evidence on the ID
+  what_changed: string; // shown as inferred text
+};

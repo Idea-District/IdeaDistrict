@@ -1,14 +1,23 @@
 import type {
   ApiErrorBody,
+  ChatMessage,
   ChoiceInput,
   ChoiceResult,
   ContextAnswers,
+  Conversation,
+  ConversationSummary,
   Founder,
   FounderID,
   Health,
   KnownUnknown,
+  OutcomeInput,
+  OutcomeResult,
+  PendingOutcome,
+  Privacy,
   Recommendation,
   RecommendationResponse,
+  RespondResult,
+  RingsTrue,
   SituationView,
   TellMeMoreInput,
 } from "./types";
@@ -20,7 +29,9 @@ export class ApiError extends Error {
     readonly status: number,
     readonly body: ApiErrorBody | null,
   ) {
-    super(body?.detail ?? body?.error ?? `API request failed with ${status}`);
+    // FastAPI validation errors put a list in `detail`; only use it when it's a sentence.
+    const detail = typeof body?.detail === "string" ? body.detail : undefined;
+    super(detail ?? (status === 422 ? "Some of the details sent weren't valid." : body?.error) ?? `API request failed with ${status}`);
   }
 }
 
@@ -66,11 +77,30 @@ export function createApiClient(baseUrl: string, getToken?: () => string | null)
     buildId: (founderId: string) => post<FounderID>("/id/build", { founder_id: founderId }),
     getId: (founderId: string) => request<FounderID>(`/id${q(founderId)}`),
     tellMeMore: (input: TellMeMoreInput) => post<FounderID>("/id/tell-me-more", input),
+    ringsTrue: (founderId: string, answer: RingsTrue) =>
+      post<{ ok: true }>("/id/rings-true", { founder_id: founderId, answer }),
+
+    // Privacy
+    privacy: (founderId: string) => request<Privacy>(`/privacy${q(founderId)}`),
+    updatePrivacy: (founderId: string, changes: Partial<Privacy>) =>
+      post<Privacy>("/privacy", { founder_id: founderId, ...changes }),
 
     // Recommendations
     recommendation: (founderId: string) => request<Recommendation>(`/recommendations${q(founderId)}`),
     respond: (recommendationId: string, input: RecommendationResponse) =>
-      post<{ ok: true }>(`/recommendations/${recommendationId}/respond`, input),
+      post<RespondResult>(`/recommendations/${recommendationId}/respond`, input),
+
+    // Messaging
+    conversations: (founderId: string) => request<ConversationSummary[]>(`/conversations${q(founderId)}`),
+    conversation: (conversationId: string, founderId: string) =>
+      request<Conversation>(`/conversations/${conversationId}${q(founderId)}`),
+    sendMessage: (conversationId: string, founderId: string, body: string) =>
+      post<ChatMessage>(`/conversations/${conversationId}/messages`, { founder_id: founderId, body }),
+
+    // Outcomes
+    pendingOutcomes: (founderId: string) => request<PendingOutcome[]>(`/outcomes/pending${q(founderId)}`),
+    reportOutcome: (recommendationId: string, input: OutcomeInput) =>
+      post<OutcomeResult>(`/recommendations/${recommendationId}/outcome`, input),
   };
 }
 

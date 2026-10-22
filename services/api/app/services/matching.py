@@ -14,12 +14,15 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.base import utcnow
-from app.models import IdAttribute, IdState, NoMatchLog, Recommendation, User
-from app.schemas.demo import MatchOut, MatchPerson, NoMatchOut, RespondIn
-from app.services import interactions
+from app.models import IdAttribute, NoMatchLog, Recommendation, User
+from app.schemas.demo import MatchOut, NoMatchOut, RespondIn
+from app.services import interactions, messaging, privacy
 from app.services.ai.client import AIClient
 from app.services.errors import Conflict, NotFound
 from app.services.id_builder import HEADLINE, id_changed_at
+from app.services.people import current_state as _state
+from app.services.people import first_value as _first
+from app.services.people import person_card
 
 MATCH_SCHEMA = {
     "type": "object",
@@ -38,12 +41,15 @@ MATCH_SCHEMA = {
 }
 
 FIRST_MEMBER_REASON = "You're one of the first members, so there's nobody to introduce you to yet."
+PAUSED_REASON = "You've paused introductions. Turn them back on under You whenever you're ready."
 
 
 def recommend(db: Session, ai: AIClient, founder: User) -> MatchOut | NoMatchOut:
     changed = id_changed_at(db, founder.id)
     if changed is None:
         raise Conflict("Build your ID first — recommendations come from it.")
+    if not privacy.introductions_allowed(db, founder.id):
+        return NoMatchOut(reasons=[PAUSED_REASON])  # a choice, not a silence — not logged as no-match
 
     cached = _cached(db, founder.id, changed)
     if cached is not None:
@@ -56,7 +62,11 @@ def recommend(db: Session, ai: AIClient, founder: User) -> MatchOut | NoMatchOut
             )
         )
     )
-    candidates = [c for c in _members_with_ids(db) if c.id != founder.id and c.id not in declined]
+    candidates = [
+        c
+        for c in _members_with_ids(db)
+        if c.id != founder.id and c.id not in declined and privacy.introductions_allowed(db, c.id)
+    ]
     if not candidates:
         return _no_match(db, founder.id, [FIRST_MEMBER_REASON], 0)
 
@@ -103,16 +113,21 @@ def recommend(db: Session, ai: AIClient, founder: User) -> MatchOut | NoMatchOut
     return _match_out(db, rec)
 
 
-def respond(db: Session, recommendation_id: uuid.UUID, data: RespondIn) -> None:
+def respond(db: Session, recommendation_id: uuid.UUID, data: RespondIn) -> uuid.UUID | None:
+    """Returns the conversation id when an introduction is accepted."""
     rec = db.get(Recommendation, recommendation_id)
     if rec is None or rec.user_a_id != data.founder_id:
         raise NotFound("Recommendation not found.")
+    if rec.status == "accepted" and data.response == "accept":  # retried request
+        return messaging.open_for(db, rec).id
     rec.status = "accepted" if data.response == "accept" else "declined"
     rec.responded_at = utcnow()
     interactions.record(
         db, f"recommendation_{rec.status}", user_id=data.founder_id, entity_type="recommendation", entity_id=rec.id
     )
+    conversation_id = messaging.open_for(db, rec).id if rec.status == "accepted" else None
     db.commit()
+    return conversation_id
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────
@@ -155,15 +170,6 @@ def _members_with_ids(db: Session) -> list[User]:
     return list(db.scalars(select(User).where(User.id.in_(built), User.user_type == "founder")))
 
 
-def _state(db: Session, user_id: uuid.UUID) -> list[IdState]:
-    return list(
-        db.scalars(select(IdState).where(IdState.user_id == user_id, IdState.superseded_at.is_(None)))
-    )
-
-
-def _first(state: list[IdState], field: str, default: str = "") -> str:
-    return next((s.value for s in state if s.field == field and s.facet == "primary"), default)
-
 
 def _profile(db: Session, user: User, include_private: bool) -> dict:
     state = _state(db, user.id)
@@ -193,16 +199,9 @@ def _check_match(data: dict, aliases: dict) -> None:
 
 
 def _match_out(db: Session, rec: Recommendation) -> MatchOut:
-    other = db.get(User, rec.user_b_id)
-    state = _state(db, other.id)
     return MatchOut(
         id=rec.id,
-        person=MatchPerson(
-            name=other.name,
-            building=_first(state, "project", other.organisation or ""),
-            stage=_first(state, "stage"),
-            city=other.city or "",
-        ),
+        person=person_card(db, db.get(User, rec.user_b_id)),
         match_type=rec.match_type,
         why_now=rec.why_now,
         why_them=rec.why_them,

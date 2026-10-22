@@ -3,9 +3,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { Button, ButtonLink, CalmState, ConfidenceWord, ErrorNotice, IdMark, Label, PhoneFrame, TabBar, Tag } from "@/components/ui";
-import { session, useStored } from "@/lib/session";
+import { ButtonLink, CalmState, ConfidenceWord, ErrorNotice, IdMark, Label, PhoneFrame, TabBar, Tag } from "@/components/ui";
 
+import { RingsTrue } from "./RingsTrue";
 import { useFounderIdData } from "./useFounderIdData";
 
 function Cluster({ label, children }: { label: string; children: ReactNode }) {
@@ -22,12 +22,9 @@ function Cluster({ label, children }: { label: string; children: ReactNode }) {
 const linkRow =
   "flex items-center justify-between rounded-xl border border-rule bg-card px-3.5 py-3 text-[14.5px] font-bold hover:border-ink3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember";
 
-const answers = ["Yes", "Partly", "No"] as const;
-
 /** Screen 10: My ID — the map. */
 export function IdMap({ founderId }: { founderId: string }) {
   const { data, error, retry } = useFounderIdData(founderId);
-  const ringTrue = useStored("ringTrue");
 
   if (!data) {
     return (
@@ -126,22 +123,7 @@ export function IdMap({ founderId }: { founderId: string }) {
         </p>
       </div>
 
-      <section className="mt-5 rounded-2xl bg-sand px-[15px] py-[14px]" aria-labelledby="ring-true">
-        <p id="ring-true" className="text-[14.5px] font-bold">
-          Does this ring true?
-        </p>
-        {ringTrue ? (
-          <p className="mt-2 text-[14px] text-ink2">Thanks — that&rsquo;s evidence too.</p>
-        ) : (
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {answers.map((a) => (
-              <Button key={a} variant="secondary" className="py-2.5 text-[14px]" onClick={() => session.setRingTrue(a)}>
-                {a}
-              </Button>
-            ))}
-          </div>
-        )}
-      </section>
+      <RingsTrue founderId={founderId} saved={data.rings_true} />
 
       <ButtonLink href="/for-you" className="mt-6">
         See who you should meet

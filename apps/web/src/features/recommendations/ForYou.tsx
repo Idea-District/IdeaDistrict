@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
 
 import { MatchCard } from "./MatchCard";
+import { PendingOutcomes } from "./PendingOutcomes";
 import { TellMeMore } from "./TellMeMore";
 
 /** Screens 13–14: one intersection, or an honest no-match with Tell me more. */
@@ -47,6 +48,7 @@ export function ForYou({ founderId }: { founderId: string }) {
 
   return (
     <PhoneFrame footer={<TabBar />}>
+      <PendingOutcomes founderId={founderId} className="mb-6" />
       {!rec ? (
         error ? (
           <ErrorNotice message={error} onRetry={lookAgain} />

@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
-from app.db.base import utcnow
+from app.db.base import iso, utcnow
 from app.models import (
     Choice,
     ContextAnswer,
@@ -23,7 +23,7 @@ from app.models import (
     User,
 )
 from app.schemas.demo import FounderID, FounderOut, Gap, PersonAttribute, StateItem
-from app.services import interactions
+from app.services import interactions, privacy
 from app.services.ai.client import AIClient
 from app.services.errors import Conflict
 from app.services.founders import founder_context
@@ -230,12 +230,13 @@ def read(db: Session, founder: User) -> FounderID:
     return FounderID(
         founder=FounderOut(id=founder.id, name=founder.name),
         decisions=len(_decisions(db, founder.id)),
-        built_at=headline.created_at.isoformat() if headline else None,
+        built_at=iso(headline.created_at) if headline else None,
         headline=headline.insight if headline else "",
         state=state,
         person=person,
         gaps=[Gap(dimension=g.dimension, question=g.question, why_it_matters=g.why_it_matters, status=g.status) for g in gaps],
         overall_confidence="developing",  # only real-world outcomes can move this
+        rings_true=privacy.latest_rings_true(db, founder.id),
     )
 
 

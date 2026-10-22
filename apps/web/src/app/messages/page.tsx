@@ -1,8 +1,8 @@
 "use client";
 
 import { RequireFounder } from "@/components/RequireFounder";
-import { Messages } from "@/features/recommendations/Messages";
+import { ConversationList } from "@/features/messages/ConversationList";
 
 export default function Page() {
-  return <RequireFounder>{() => <Messages />}</RequireFounder>;
+  return <RequireFounder>{(founderId) => <ConversationList founderId={founderId} />}</RequireFounder>;
 }

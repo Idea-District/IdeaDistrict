@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { useStored } from "@/lib/session";
+import { useUnreadCount } from "@/lib/useUnreadCount";
+
 const tabs = [
   { href: "/for-you", label: "For you", match: ["/for-you"] },
   { href: "/messages", label: "Messages", match: ["/messages"] },
@@ -34,6 +37,7 @@ function Icon({ name }: { name: (typeof tabs)[number]["label"] }) {
 
 export function TabBar() {
   const pathname = usePathname();
+  const unread = useUnreadCount(useStored("founderId"));
   return (
     <nav aria-label="Main" className="sticky bottom-0 border-t border-rule bg-cream/95 backdrop-blur">
       <ul className="flex">
@@ -46,8 +50,16 @@ export function TabBar() {
                 aria-current={active ? "page" : undefined}
                 className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-bold focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ember ${active ? "text-ember" : "text-ink3 hover:text-ink"}`}
               >
-                <Icon name={t.label} />
+                <span className="relative">
+                  <Icon name={t.label} />
+                  {t.label === "Messages" && unread > 0 ? (
+                    <span className="absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ember px-1 text-[9.5px] font-bold leading-none text-white">
+                      {unread > 9 ? "9+" : unread}
+                    </span>
+                  ) : null}
+                </span>
                 {t.label}
+                {t.label === "Messages" && unread > 0 ? <span className="sr-only">, {unread} unread</span> : null}
               </Link>
             </li>
           );

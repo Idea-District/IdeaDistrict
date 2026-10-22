@@ -14,7 +14,6 @@ const KEYS = {
   founderId: "idd.founderId",
   founderName: "idd.founderName",
   sessionId: "idd.sessionId",
-  ringTrue: "idd.ringTrue",
 } as const;
 
 type Key = keyof typeof KEYS;
@@ -43,19 +42,16 @@ export const session = {
   founderId: () => read("founderId"),
   founderName: () => read("founderName"),
   sessionId: () => read("sessionId"),
-  ringTrue: () => read("ringTrue"),
 
   /** Starts a fresh founder: clears everything from a previous run. */
   setFounder(id: string, name: string) {
     write("sessionId", null);
-    write("ringTrue", null);
     memory.known = null;
     memory.firstSituation = null;
     write("founderName", name);
     write("founderId", id);
   },
   setSessionId: (id: string) => write("sessionId", id),
-  setRingTrue: (answer: string) => write("ringTrue", answer),
 };
 
 /** In-memory hand-offs between screens (lost on reload, which is fine: screens refetch). */

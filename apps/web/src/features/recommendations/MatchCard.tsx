@@ -4,20 +4,12 @@ import { useState } from "react";
 
 import type { Recommendation } from "@idea-district/api-client";
 
-import { Button, ConfidenceWord, ErrorNotice, Label } from "@/components/ui";
+import { Avatar, Button, ButtonLink, ConfidenceWord, ErrorNotice, Label } from "@/components/ui";
 import { api } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
+import { personLine } from "@/lib/format";
 
 type Match = Extract<Recommendation, { kind: "match" }>;
-
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]!.toUpperCase())
-    .join("");
-}
 
 function Explain({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -33,12 +25,14 @@ export function MatchCard({ founderId, rec, onLookAgain }: { founderId: string; 
   const [busy, setBusy] = useState<"accept" | "decline" | null>(null);
   const [done, setDone] = useState<"accept" | "decline" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   async function respond(response: "accept" | "decline") {
     setBusy(response);
     setError(null);
     try {
-      await api.respond(rec.id, { founder_id: founderId, response });
+      const r = await api.respond(rec.id, { founder_id: founderId, response });
+      setConversationId(r.conversation_id ?? null);
       setDone(response);
     } catch (e) {
       setError(errorMessage(e));
@@ -56,13 +50,11 @@ export function MatchCard({ founderId, rec, onLookAgain }: { founderId: string; 
       </span>
 
       <div className="mt-4 flex items-center gap-3.5">
-        <div aria-hidden className="flex size-[52px] shrink-0 items-center justify-center rounded-full bg-espresso text-[17px] font-extrabold text-cream">
-          {initials(p.name)}
-        </div>
+        <Avatar name={p.name} />
         <div>
           <h1 className="text-[22px] font-extrabold leading-tight tracking-[-0.03em]">{p.name}</h1>
           <p className="mt-0.5 text-[13px] text-ink3">
-            {[p.building, p.stage, p.city].filter(Boolean).join(" · ")}
+            {personLine(p)}
           </p>
         </div>
       </div>
@@ -85,8 +77,12 @@ export function MatchCard({ founderId, rec, onLookAgain }: { founderId: string; 
 
       {done === "accept" ? (
         <div role="status" className="fade-in mt-5 rounded-2xl bg-sand px-[15px] py-[14px]">
-          <Label>Introduction requested</Label>
-          <p className="mt-1.5 text-[14.5px] leading-relaxed">Introduction requested — we&rsquo;ll let you both know.</p>
+          <p className="mt-1.5 text-[14.5px] leading-relaxed">Introduction made — say hello.</p>
+          {conversationId ? (
+            <ButtonLink href={`/messages/${conversationId}`} className="mt-3">
+              Open conversation
+            </ButtonLink>
+          ) : null}
         </div>
       ) : done === "decline" ? (
         <div role="status" className="fade-in mt-5 rounded-2xl bg-sand px-[15px] py-[14px]">

@@ -21,6 +21,9 @@ class Settings(BaseSettings):
 
     # Discovery shape is configuration, not code (decision: 5 situations).
     situations_per_session: int = 5
+    # "Did that go anywhere?" is asked this many days after an introduction is accepted.
+    # Set to 0 for demos so the survey appears straight away.
+    outcome_survey_delay_days: int = 12
 
     cors_origins: str = "http://localhost:3100,http://localhost:8081"
 

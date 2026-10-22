@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 Confidence = Literal["low", "medium", "high"]
 Facet = Literal["primary", "secondary"]
 Source = Literal["declared", "observed", "inferred", "validated"]
+RingsTrue = Literal["yes", "partly", "no"]
 
 
 class FounderIn(BaseModel):
@@ -115,6 +116,7 @@ class FounderID(BaseModel):
     person: list[PersonAttribute]
     gaps: list[Gap]
     overall_confidence: Literal["developing", "established"]
+    rings_true: RingsTrue | None = None
 
 
 class TellMeMoreIn(FounderRef):
@@ -147,3 +149,78 @@ class NoMatchOut(BaseModel):
 
 class RespondIn(FounderRef):
     response: Literal["accept", "decline"]
+
+
+class RespondOut(BaseModel):
+    ok: Literal[True] = True
+    conversation_id: uuid.UUID | None
+
+
+class RingsTrueIn(FounderRef):
+    answer: RingsTrue
+
+
+# ── Privacy ─────────────────────────────────────────────────────────────
+
+
+class PrivacyOut(BaseModel):
+    id_visible_to_investors: bool
+    state_visible_to_investors: bool
+    allow_introductions: bool
+
+
+class PrivacyIn(FounderRef):
+    id_visible_to_investors: bool | None = None
+    state_visible_to_investors: bool | None = None
+    allow_introductions: bool | None = None
+
+
+# ── Messaging ───────────────────────────────────────────────────────────
+
+
+class ChatMessageOut(BaseModel):
+    id: uuid.UUID
+    from_me: bool
+    body: str
+    sent_at: str
+
+
+class ConversationSummaryOut(BaseModel):
+    id: uuid.UUID
+    with_: MatchPerson = Field(serialization_alias="with")
+    origin: str
+    last_message: str | None
+    last_message_at: str | None
+    unread: int
+
+
+class ConversationOut(BaseModel):
+    id: uuid.UUID
+    with_: MatchPerson = Field(serialization_alias="with")
+    origin: str
+    introduced_at: str
+    messages: list[ChatMessageOut]
+
+
+class SendMessageIn(FounderRef):
+    body: str = Field(min_length=1, max_length=4000)
+
+
+# ── Outcomes ────────────────────────────────────────────────────────────
+
+
+class PendingOutcomeOut(BaseModel):
+    recommendation_id: uuid.UUID
+    with_: MatchPerson = Field(serialization_alias="with")
+    introduced_at: str
+
+
+class OutcomeIn(FounderRef):
+    did_meet: bool
+    was_useful: Literal["not_really", "yes", "very"] | None = None
+    will_talk_again: Literal["already", "maybe", "no"] | None = None
+
+
+class OutcomeOut(BaseModel):
+    validated: bool
+    what_changed: str

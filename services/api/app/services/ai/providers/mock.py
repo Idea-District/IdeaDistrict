@@ -1,8 +1,8 @@
 """Offline provider: scripted, schema-shaped answers so the whole flow runs with no network.
 Used for development, tests, and as the on-stage fallback (AI_PROVIDER=mock)."""
 
-import itertools
 import json
+import re
 
 from app.services.ai.providers.base import ProviderRequest, ProviderResponse
 
@@ -71,7 +71,7 @@ _SITUATIONS = [
 
 FIXTURES: dict[str, object] = {
     "ping": {"ok": True},
-    "situation": itertools.cycle(_SITUATIONS),
+    "situation": _SITUATIONS,  # picked by the situation number in the request, not by call order
     "build_person": {
         "headline": "You look for evidence from customers before you commit money or people.",
         "attributes": [
@@ -120,7 +120,10 @@ class MockProvider:
         fixture = FIXTURES.get(request.purpose)
         if fixture is None:
             raise LookupError(f"mock provider has no fixture for purpose '{request.purpose}'")
-        payload = next(fixture) if isinstance(fixture, itertools.cycle) else fixture
+        payload = fixture
+        if isinstance(fixture, list):
+            found = re.search(r"situation_number: (\d+)", request.prompt)
+            payload = fixture[(int(found.group(1)) - 1 if found else 0) % len(fixture)]
         text = json.dumps(payload)
         return ProviderResponse(
             text=text,
