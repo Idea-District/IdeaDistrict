@@ -43,9 +43,15 @@ MATCH_SCHEMA = {
 
 FIRST_MEMBER_REASON = "You're one of the first members, so there's nobody to introduce you to yet."
 PAUSED_REASON = "You've paused introductions. Turn them back on under You whenever you're ready."
+INVESTOR_REASON = (
+    "Investors don't get suggestions here. When a founder who fits what you back is raising, "
+    "we introduce them to you, and the conversation appears in Messages."
+)
 
 
 def recommend(db: Session, ai: AIClient, founder: User) -> MatchOut | NoMatchOut:
+    if founder.user_type == "investor":  # investors receive introductions; they are never suggested people
+        return NoMatchOut(reasons=[INVESTOR_REASON])
     changed = id_changed_at(db, founder.id)
     if changed is None:
         raise Conflict("Build your ID first — recommendations come from it.")
@@ -56,20 +62,25 @@ def recommend(db: Session, ai: AIClient, founder: User) -> MatchOut | NoMatchOut
     if cached is not None:
         return cached
 
-    declined = set(
-        db.scalars(
-            select(Recommendation.user_b_id).where(
-                Recommendation.user_a_id == founder.id, Recommendation.status == "declined"
-            )
+    responded = db.execute(
+        select(Recommendation.user_b_id, Recommendation.status).where(
+            Recommendation.user_a_id == founder.id, Recommendation.status.in_(["declined", "accepted"])
         )
-    )
+    ).all()
+    declined = {user_id for user_id, status in responded if status == "declined"}
+    introduced = {user_id for user_id, status in responded if status == "accepted"}  # already in Messages
     candidates = [
         c
         for c in _members_with_ids(db)
-        if c.id != founder.id and c.id not in declined and privacy.introductions_allowed(db, c.id)
+        if c.id != founder.id
+        and c.id not in declined
+        and c.id not in introduced
+        and privacy.introductions_allowed(db, c.id)
     ]
+    passed_on = [u.name for u in db.scalars(select(User).where(User.id.in_(declined)).order_by(User.name))]
     if not candidates:
-        return _no_match(db, founder.id, [FIRST_MEMBER_REASON], 0)
+        reasons = [_passed_on_reason(passed_on)] if passed_on else [FIRST_MEMBER_REASON]
+        return _no_match(db, founder.id, reasons, 0)
 
     aliases = {f"M{i + 1}": c for i, c in enumerate(candidates)}
     seeker = _profile(db, founder, include_private=True)
@@ -81,6 +92,9 @@ def recommend(db: Session, ai: AIClient, founder: User) -> MatchOut | NoMatchOut
         "members": json.dumps(
             [{"alias": alias, **_profile(db, c, include_private=True)} for alias, c in aliases.items()]
         ),
+        # People the founder said "Not now" to. They are not in `members`, but they exist, so a
+        # no-match reason must never claim that nobody offers what they offer.
+        "already_passed_on": json.dumps(passed_on),
     }
     data = ai.run(
         purpose="match",
@@ -95,7 +109,10 @@ def recommend(db: Session, ai: AIClient, founder: User) -> MatchOut | NoMatchOut
     alias = str(data.get("match", "")).strip().upper()
     if alias not in aliases:
         reasons = [str(r).strip() for r in data.get("no_match_reasons") or [] if str(r).strip()]
-        return _no_match(db, founder.id, reasons or ["Nobody here fits well enough yet to be worth your time."], len(candidates))
+        reasons = reasons or ["Nobody here fits well enough yet to be worth your time."]
+        if passed_on:  # said by the app, not left to the model's wording
+            reasons = [_passed_on_reason(passed_on), *reasons]
+        return _no_match(db, founder.id, reasons, len(candidates))
 
     other = aliases[alias]
     rec = Recommendation(
@@ -116,6 +133,11 @@ def recommend(db: Session, ai: AIClient, founder: User) -> MatchOut | NoMatchOut
     interactions.record(db, "recommendation_shown", user_id=founder.id, entity_type="recommendation", entity_id=rec.id)
     db.commit()
     return _match_out(db, rec)
+
+
+def _passed_on_reason(names: list[str]) -> str:
+    listed = names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+    return f"You passed on {listed}. Nobody else here fits as well yet."
 
 
 def respond(db: Session, recommendation_id: uuid.UUID, data: RespondIn) -> uuid.UUID | None:
@@ -153,7 +175,7 @@ def _cached(db: Session, founder_id: uuid.UUID, changed) -> MatchOut | NoMatchOu
         return None
     if isinstance(newest, NoMatchLog):
         return NoMatchOut(reasons=newest.reasons)
-    if newest.status == "declined":
+    if newest.status in ("declined", "accepted"):  # answered: look for the next person
         return None
     return _match_out(db, newest)
 
@@ -175,7 +197,11 @@ def _members_with_ids(db: Session) -> list[User]:
     introduction (see the match prompt and _check_match); they never receive suggestions."""
     built = select(IdAttribute.user_id).distinct()
     return list(
-        db.scalars(select(User).where(User.id.in_(built), User.user_type.in_(["founder", "investor"])))
+        db.scalars(
+            select(User)
+            .where(User.id.in_(built), User.user_type.in_(["founder", "investor"]))
+            .order_by(User.created_at, User.id)  # stable aliases (M1, M2…) between runs
+        )
     )
 
 

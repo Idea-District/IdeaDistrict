@@ -24,12 +24,18 @@ export type ContextAnswers = {
 };
 
 export type KnownItem = { dimension: string; text: string; source: Source };
-export type UnknownItem = { dimension: string; label: string };
+export type UnknownItem = {
+  id: string; // tap it to explore with one optional situation (api.probeGap)
+  dimension: string;
+  label: string;
+  why_it_matters: string;
+};
 export type KnownUnknown = { known: KnownItem[]; unknown: UnknownItem[] };
 
 export type SituationOption = { id: string; text: string };
 
 export type SituationView = {
+  kind: "discovery" | "probe"; // probe = one optional situation on a topic the founder tapped
   session_id: string;
   situation_id: string;
   sequence_no: number; // 1-based
@@ -50,7 +56,9 @@ export type ChoiceInput = {
 };
 
 export type SignalView = {
-  text: string; // what we observed — render as inferred (serif italic)
+  text: string; // what this choice MIGHT suggest — render as inferred (serif italic)
+  still_unclear: string; // what this one choice can't tell us yet
+  decisions_so_far: number;
   evidence: string; // e.g. "Chose B in situation 1"
   type: "observed";
   confidence: number; // 0..1, deliberately low (0.35) for one decision
@@ -74,7 +82,7 @@ export type PersonAttribute = {
   facet: Facet;
 };
 
-export type Gap = { dimension: string; question: string; why_it_matters: string; status: "open" | "probing" | "closed" };
+export type Gap = { id: string; dimension: string; question: string; why_it_matters: string; status: "open" | "probing" | "closed" };
 
 export type RingsTrue = "yes" | "partly" | "no";
 

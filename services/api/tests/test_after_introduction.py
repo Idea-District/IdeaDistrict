@@ -112,3 +112,18 @@ def test_no_meeting_is_not_counted(client, founder_with_match, monkeypatch):
     result = client.post(f"/v1/recommendations/{rec['id']}/outcome",
                          json={"founder_id": founder_id, "did_meet": False}).json()
     assert result == {"validated": False, "what_changed": "No meeting yet, so we won't count it either way."}
+
+
+def test_after_accepting_the_next_suggestion_is_someone_new(client, db, founder_with_match):
+    founder_id, rec, vikram = founder_with_match
+    farah = User(name="Farah Siddiqui", city="Bengaluru")
+    db.add(farah)
+    db.flush()
+    db.add(IdAttribute(user_id=farah.id, dimension="Ops", insight="Runs field teams.", confidence="medium",
+                       strength=0.5, evidence_summary="3 of 5", version=1))
+    db.commit()
+    client.post(f"/v1/recommendations/{rec['id']}/respond", json={"founder_id": founder_id, "response": "accept"})
+
+    nxt = client.get("/v1/recommendations", params={"founder_id": founder_id}).json()
+    assert nxt["kind"] == "match" and nxt["person"]["name"] == "Farah Siddiqui"  # Vikram is already introduced
+    assert len(client.get("/v1/conversations", params={"founder_id": founder_id}).json()) == 1

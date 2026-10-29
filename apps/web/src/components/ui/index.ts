@@ -2,7 +2,7 @@ export { AppBar } from "./AppBar";
 export { Avatar } from "./Avatar";
 export { Button, ButtonLink, buttonClass } from "./Button";
 export { CalmState } from "./CalmState";
-export { ConfidenceWord, StrengthBar } from "./Confidence";
+export { ConfidenceWord, ReadStrength } from "./Confidence";
 export { ErrorNotice } from "./ErrorNotice";
 export { IdMark } from "./IdMark";
 export { Heading, Label, Sub } from "./Label";

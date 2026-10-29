@@ -15,10 +15,10 @@ _SITUATIONS = [
         "situation": "You have ₹50 lakh and four months before you need to raise again. Two strong engineers in Bengaluru would join tomorrow.",
         "question": "What do you do first?",
         "options": [
-            {"id": "A", "text": "Hire both engineers and build faster.", "signal": "Leans toward building capacity before proof."},
-            {"id": "B", "text": "Spend a month selling to ten customers by hand first.", "signal": "Prioritises customer evidence before major spend."},
-            {"id": "C", "text": "Partner with an agency to build while you sell.", "signal": "Trades control for speed and flexibility."},
-            {"id": "D", "text": "Keep the money and extend runway to eight months.", "signal": "Protects optionality over momentum."},
+            {"id": "A", "text": "Hire both engineers and build faster.", "signal": "Leans toward building capacity before proof.", "still_unclear": "Whether you would choose the same with real money at stake."},
+            {"id": "B", "text": "Spend a month selling to ten customers by hand first.", "signal": "Prioritises customer evidence before major spend.", "still_unclear": "Whether you would choose the same with real money at stake."},
+            {"id": "C", "text": "Partner with an agency to build while you sell.", "signal": "Trades control for speed and flexibility.", "still_unclear": "Whether you would choose the same with real money at stake."},
+            {"id": "D", "text": "Keep the money and extend runway to eight months.", "signal": "Protects optionality over momentum.", "still_unclear": "Whether you would choose the same with real money at stake."},
         ],
     },
     {
@@ -29,10 +29,10 @@ _SITUATIONS = [
         "situation": "Customers love the idea, but your first version breaks every few days. A big customer wants a pilot next month.",
         "question": "What do you do?",
         "options": [
-            {"id": "A", "text": "Freeze new features and fix reliability for six weeks.", "signal": "Puts reliability ahead of the next deal."},
-            {"id": "B", "text": "Take the pilot and patch issues as they come.", "signal": "Learns in public, accepts execution risk."},
-            {"id": "C", "text": "Bring in a senior contractor to stabilise it fast.", "signal": "Buys capability to protect momentum."},
-            {"id": "D", "text": "Shrink the pilot to one team you can support.", "signal": "Narrows scope to keep promises."},
+            {"id": "A", "text": "Freeze new features and fix reliability for six weeks.", "signal": "Puts reliability ahead of the next deal.", "still_unclear": "Whether you would choose the same with real money at stake."},
+            {"id": "B", "text": "Take the pilot and patch issues as they come.", "signal": "Learns in public, accepts execution risk.", "still_unclear": "Whether you would choose the same with real money at stake."},
+            {"id": "C", "text": "Bring in a senior contractor to stabilise it fast.", "signal": "Buys capability to protect momentum.", "still_unclear": "Whether you would choose the same with real money at stake."},
+            {"id": "D", "text": "Shrink the pilot to one team you can support.", "signal": "Narrows scope to keep promises.", "still_unclear": "Whether you would choose the same with real money at stake."},
         ],
     },
     {
@@ -43,10 +43,10 @@ _SITUATIONS = [
         "situation": "A larger company offers to distribute your product to 2,000 businesses — if they get a say in your roadmap.",
         "question": "How do you respond?",
         "options": [
-            {"id": "A", "text": "Accept: distribution like this is rare.", "signal": "Trades control for reach."},
-            {"id": "B", "text": "Agree, with written limits on their roadmap say.", "signal": "Partners while protecting key decisions."},
-            {"id": "C", "text": "Run a three-month trial before committing.", "signal": "Builds trust in stages, on evidence."},
-            {"id": "D", "text": "Decline and keep the roadmap yours.", "signal": "Strong preference for product control."},
+            {"id": "A", "text": "Accept: distribution like this is rare.", "signal": "Trades control for reach.", "still_unclear": "Whether you would choose the same with real money at stake."},
+            {"id": "B", "text": "Agree, with written limits on their roadmap say.", "signal": "Partners while protecting key decisions.", "still_unclear": "Whether you would choose the same with real money at stake."},
+            {"id": "C", "text": "Run a three-month trial before committing.", "signal": "Builds trust in stages, on evidence.", "still_unclear": "Whether you would choose the same with real money at stake."},
+            {"id": "D", "text": "Decline and keep the roadmap yours.", "signal": "Strong preference for product control.", "still_unclear": "Whether you would choose the same with real money at stake."},
         ],
     },
     {
@@ -57,10 +57,10 @@ _SITUATIONS = [
         "situation": "An investor offers to double your round if you launch in Hyderabad within eight weeks. Your team is already stretched.",
         "question": "What do you do?",
         "options": [
-            {"id": "A", "text": "Take it and launch with a skeleton team.", "signal": "Comfortable with big bets under strain."},
-            {"id": "B", "text": "Negotiate a twelve-week timeline instead.", "signal": "Takes the upside on its own terms."},
-            {"id": "C", "text": "Decline and grow where you already win.", "signal": "Prefers depth over expansion."},
-            {"id": "D", "text": "Test demand in Hyderabad remotely first.", "signal": "De-risks before committing people."},
+            {"id": "A", "text": "Take it and launch with a skeleton team.", "signal": "Comfortable with big bets under strain.", "still_unclear": "Whether you would choose the same with real money at stake."},
+            {"id": "B", "text": "Negotiate a twelve-week timeline instead.", "signal": "Takes the upside on its own terms.", "still_unclear": "Whether you would choose the same with real money at stake."},
+            {"id": "C", "text": "Decline and grow where you already win.", "signal": "Prefers depth over expansion.", "still_unclear": "Whether you would choose the same with real money at stake."},
+            {"id": "D", "text": "Test demand in Hyderabad remotely first.", "signal": "De-risks before committing people.", "still_unclear": "Whether you would choose the same with real money at stake."},
         ],
     },
     {
@@ -71,10 +71,10 @@ _SITUATIONS = [
         "situation": "Your most experienced advisor tells your team, in a meeting, that your plan is wrong.",
         "question": "What do you do next?",
         "options": [
-            {"id": "A", "text": "Talk to them privately the same day.", "signal": "Addresses conflict directly and quickly."},
-            {"id": "B", "text": "Ask the team to test both plans for two weeks.", "signal": "Lets evidence settle disagreements."},
-            {"id": "C", "text": "Hold your plan and explain your reasoning.", "signal": "Holds a position under senior pressure."},
-            {"id": "D", "text": "Bring in a neutral third person to mediate.", "signal": "Seeks structure in conflict."},
+            {"id": "A", "text": "Talk to them privately the same day.", "signal": "Addresses conflict directly and quickly.", "still_unclear": "Whether you would choose the same with real money at stake."},
+            {"id": "B", "text": "Ask the team to test both plans for two weeks.", "signal": "Lets evidence settle disagreements.", "still_unclear": "Whether you would choose the same with real money at stake."},
+            {"id": "C", "text": "Hold your plan and explain your reasoning.", "signal": "Holds a position under senior pressure.", "still_unclear": "Whether you would choose the same with real money at stake."},
+            {"id": "D", "text": "Bring in a neutral third person to mediate.", "signal": "Seeks structure in conflict.", "still_unclear": "Whether you would choose the same with real money at stake."},
         ],
     },
 ]

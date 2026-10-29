@@ -234,7 +234,7 @@ def read(db: Session, founder: User) -> FounderID:
         headline=headline.insight if headline else "",
         state=state,
         person=person,
-        gaps=[Gap(dimension=g.dimension, question=g.question, why_it_matters=g.why_it_matters, status=g.status) for g in gaps],
+        gaps=[Gap(id=g.id, dimension=g.dimension, question=g.question, why_it_matters=g.why_it_matters, status=g.status) for g in gaps],
         overall_confidence="developing",  # only real-world outcomes can move this
         rings_true=privacy.latest_rings_true(db, founder.id),
     )

@@ -3,8 +3,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { ButtonLink, CalmState, ConfidenceWord, ErrorNotice, IdMark, Label, PhoneFrame, TabBar, Tag } from "@/components/ui";
+import { ButtonLink, CalmState, ReadStrength, ErrorNotice, IdMark, Label, PhoneFrame, TabBar, Tag } from "@/components/ui";
 
+import { GapCards } from "./GapCard";
 import { RingsTrue } from "./RingsTrue";
 import { useFounderIdData } from "./useFounderIdData";
 
@@ -60,7 +61,7 @@ export function IdMap({ founderId }: { founderId: string }) {
           <Label tone="neutral">Your ID</Label>
           <h1 className="mt-1 text-[28px] font-extrabold leading-tight tracking-[-0.03em]">{data.founder.name}</h1>
           <p className="mt-1 text-[13px] text-ink3">
-            {data.decisions} decisions · built just now
+            {data.decisions} {data.decisions === 1 ? "decision" : "decisions"} · built just now
           </p>
         </div>
         <IdMark />
@@ -97,7 +98,7 @@ export function IdMap({ founderId }: { founderId: string }) {
           {topPerson.map((p) => (
             <li key={p.dimension} className="flex items-center justify-between gap-3 py-3">
               <span className="text-[14.5px] font-bold">{p.dimension}</span>
-              <ConfidenceWord value={p.confidence} />
+              <ReadStrength value={p.confidence} />
             </li>
           ))}
         </ul>
@@ -107,19 +108,27 @@ export function IdMap({ founderId }: { founderId: string }) {
       </Cluster>
 
       <Cluster label="What we don't know yet">
-        <p className="text-[15px]">
-          <span className="text-[22px] font-extrabold text-ember">{openGaps.length}</span>{" "}
-          {openGaps.length === 1 ? "thing" : "things"} we&rsquo;re still working out.
-        </p>
-        <Link href="/id/gaps" className={`${linkRow} mt-3`}>
-          What we still don&rsquo;t know <span aria-hidden className="text-ember">→</span>
-        </Link>
+        {openGaps.length === 0 ? (
+          <p className="text-[14.5px] text-ink2">No open questions right now.</p>
+        ) : (
+          <>
+            <p className="mb-3 text-[13.5px] leading-relaxed text-ink2">
+              {openGaps.length} {openGaps.length === 1 ? "thing" : "things"} we&rsquo;re still working out. Explore one if you like.
+            </p>
+            <GapCards gaps={openGaps} founderId={founderId} limit={3} />
+            {openGaps.length > 3 ? (
+              <Link href="/id/gaps" className={`${linkRow} mt-3`}>
+                See all {openGaps.length} <span aria-hidden className="text-ember">→</span>
+              </Link>
+            ) : null}
+          </>
+        )}
       </Cluster>
 
       <div className="rounded-2xl border border-dashed border-rule px-[15px] py-[14px]">
         <Label>Confidence — {data.overall_confidence}</Label>
         <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink2">
-          Built from {data.decisions} decisions. It sharpens with every real outcome.
+          Built from {data.decisions} {data.decisions === 1 ? "decision" : "decisions"}. It sharpens with every real outcome.
         </p>
       </div>
 

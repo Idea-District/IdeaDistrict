@@ -25,4 +25,5 @@ Write:
 - what_could_happen: under 25 words, what a first conversation could produce. Empty if NONE.
 - confidence: "low" | "medium" | "high" — honest; first introductions are rarely high.
 - confidence_reason: under 18 words — what it rests on and what is untested.
+- already_passed_on lists people the founder has said "Not now" to. They are not among the members you can pick, but they are in the community: never write a reason that says nobody offers what one of them offers. Explain why the remaining members don't fit instead.
 - no_match_reasons: if NONE, 2 or 3 short honest lines on why nobody fits yet, without revealing any member's private details (e.g. "Nobody here has hired a first engineer at your stage yet."). Otherwise empty list.

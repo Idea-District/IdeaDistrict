@@ -72,6 +72,9 @@ export function createApiClient(baseUrl: string, getToken?: () => string | null)
     choose: (situationId: string, input: ChoiceInput) =>
       post<ChoiceResult>(`/discovery/situations/${situationId}/choice`, input),
     nextSituation: (sessionId: string) => post<SituationView>(`/discovery/sessions/${sessionId}/next`, {}),
+    /** One optional situation on a topic from "What we don't know yet". Returns a single-situation session. */
+    probeGap: (gapId: string, founderId: string) =>
+      post<SituationView>(`/discovery/gaps/${gapId}/probe`, { founder_id: founderId }),
 
     // The ID
     buildId: (founderId: string) => post<FounderID>("/id/build", { founder_id: founderId }),

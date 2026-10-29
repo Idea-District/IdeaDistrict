@@ -56,6 +56,7 @@ SOMETHING_ELSE = {
     "id": "E",
     "text": "Something else.",
     "signal": "None of the obvious paths fit — worth exploring what you would do instead.",
+    "still_unclear": "What you would actually do instead.",
 }
 
 SITUATION_SCHEMA = {
@@ -75,8 +76,9 @@ SITUATION_SCHEMA = {
                     "id": {"type": "string"},
                     "text": {"type": "string"},
                     "signal": {"type": "string"},
+                    "still_unclear": {"type": "string"},
                 },
-                "required": ["id", "text", "signal"],
+                "required": ["id", "text", "signal", "still_unclear"],
             },
         },
     },
@@ -134,7 +136,10 @@ def known_unknown(db: Session, founder: User) -> KnownUnknown:
 
 
 def _open_gaps(db: Session, founder_id: uuid.UUID) -> list[UnknownItem]:
-    return [UnknownItem(dimension=g.dimension, label=g.question) for g in _open_gap_rows(db, founder_id)]
+    return [
+        UnknownItem(id=g.id, dimension=g.dimension, label=g.question, why_it_matters=g.why_it_matters)
+        for g in _open_gap_rows(db, founder_id)
+    ]
 
 
 # ── Sessions and situations ─────────────────────────────────────────────
@@ -144,7 +149,11 @@ def start_session(db: Session, ai: AIClient, founder: User) -> SituationView:
     """Idempotent: an active session with an unanswered situation is returned as it is."""
     session = db.scalar(
         select(DiscoverySession)
-        .where(DiscoverySession.user_id == founder.id, DiscoverySession.status == "active")
+        .where(
+            DiscoverySession.user_id == founder.id,
+            DiscoverySession.status == "active",
+            DiscoverySession.kind == "discovery",
+        )
         .order_by(DiscoverySession.started_at.desc())
     )
     if session is None:
@@ -157,6 +166,21 @@ def start_session(db: Session, ai: AIClient, founder: User) -> SituationView:
     if latest and not _choice_for(db, latest.id):
         return _view(session, latest)
     return next_situation(db, ai, founder, session.id)
+
+
+def probe_gap(db: Session, ai: AIClient, founder: User, gap_id: uuid.UUID) -> SituationView:
+    """The founder tapped an unknown: one optional situation on exactly that topic."""
+    gap = db.get(InformationGap, gap_id)
+    if gap is None or gap.user_id != founder.id:
+        raise NotFound("That topic isn't on your ID.")
+    session = DiscoverySession(user_id=founder.id, situation_count=1, kind="probe")
+    db.add(session)
+    db.flush()
+    interactions.record(
+        db, "gap_probe_started", user_id=founder.id, entity_type="information_gap", entity_id=gap.id, dimension=gap.dimension
+    )
+    db.commit()
+    return next_situation(db, ai, founder, session.id, required_gap=gap)
 
 
 def get_session(db: Session, founder_id: uuid.UUID | None, session_id: uuid.UUID) -> DiscoverySession:
@@ -176,7 +200,13 @@ def current_situation(db: Session, session_id: uuid.UUID) -> SituationView:
     return _view(session, latest)
 
 
-def next_situation(db: Session, ai: AIClient, founder: User | None, session_id: uuid.UUID) -> SituationView:
+def next_situation(
+    db: Session,
+    ai: AIClient,
+    founder: User | None,
+    session_id: uuid.UUID,
+    required_gap: InformationGap | None = None,
+) -> SituationView:
     """Idempotent: if the latest situation is still unanswered it is returned instead of a new one.
     The web app prefetches this while the founder reads their signal, so double calls are normal."""
     session = get_session(db, founder.id if founder else None, session_id)
@@ -190,8 +220,8 @@ def next_situation(db: Session, ai: AIClient, founder: User | None, session_id: 
 
     # The AI chooses what to learn next from the open gaps (or names a new one the
     # founder's answers raised). Priorities are guidance, not a fixed order.
-    open_gaps = _open_gap_rows(db, founder.id)
-    last_dimension = latest.dimension_targeted if latest else None
+    open_gaps = [required_gap] if required_gap else _open_gap_rows(db, founder.id)
+    last_dimension = None if required_gap else (latest.dimension_targeted if latest else None)
     variables = {
         **founder_context(db, founder),
         "open_gaps": json.dumps(
@@ -199,8 +229,13 @@ def next_situation(db: Session, ai: AIClient, founder: User | None, session_id: 
         ),
         "last_dimension_probed": last_dimension or "none yet",
         "situation_number": f"{answered + 1} of {session.situation_count}",
-        "previous_situations": json.dumps(_history(db, session.id)),
+        # A probe sees every decision the founder has made, so it doesn't repeat one.
+        "previous_situations": json.dumps(_history(db, None if required_gap else session.id, founder.id)),
     }
+    if required_gap:
+        variables["required_gap"] = json.dumps(
+            {"dimension": required_gap.dimension, "gap_question": required_gap.question}
+        )
     prompt = ai.prompt("situation")
     data = ai.run(
         purpose="situation",
@@ -209,19 +244,27 @@ def next_situation(db: Session, ai: AIClient, founder: User | None, session_id: 
         schema=SITUATION_SCHEMA,
         user_id=founder.id,
         max_output_tokens=1400,
-        validate=lambda d: _check_situation(d, open_gaps, last_dimension),
+        validate=lambda d: _check_situation(d, open_gaps, last_dimension, check_topic=required_gap is None),
     )
-    gap, chosen_from = _gap_for_choice(db, founder.id, open_gaps, data)
+    if required_gap:
+        gap, chosen_from = required_gap, "founder_tapped"
+    else:
+        gap, chosen_from = _gap_for_choice(db, founder.id, open_gaps, data)
     dimension = gap.dimension
 
     options = [
-        {"id": letter, "text": _clean(o["text"]), "signal": _clean(o["signal"])}
+        {
+            "id": letter,
+            "text": _clean(o["text"]),
+            "signal": _clean(o["signal"]),
+            "still_unclear": _clean(o.get("still_unclear")),
+        }
         for letter, o in zip("ABCD", data["options"], strict=False)
     ] + [SOMETHING_ELSE]
     situation = Situation(
         session_id=session.id,
         sequence_no=answered + 1,
-        consequence_text=_clean(data.get("consequence")) or None if answered else None,
+        consequence_text=_clean(data.get("consequence")) or None if answered and not required_gap else None,
         situation_text=_clean(data["situation"]),
         question_text=_clean(data["question"]),
         why_asking=_clean(data["why_asking"]),
@@ -278,7 +321,11 @@ def record_choice(db: Session, situation_id: uuid.UUID, data: ChoiceIn) -> Choic
                 signal_type="observed",
                 dimension=situation.dimension_targeted,
                 value_text=option["signal"],
-                evidence_text=f"Chose {option['id']} in situation {situation.sequence_no}",
+                evidence_text=(
+                    f"Chose {option['id']} in an optional situation on {situation.dimension_targeted.lower()}"
+                    if session.kind == "probe"
+                    else f"Chose {option['id']} in situation {situation.sequence_no}"
+                ),
                 confidence=OBSERVED_CONFIDENCE,
                 model_version=situation.model_used,
             )
@@ -298,10 +345,17 @@ def record_choice(db: Session, situation_id: uuid.UUID, data: ChoiceIn) -> Choic
         )
         db.commit()
 
+    decisions = db.scalar(select(func.count()).select_from(Choice).where(Choice.user_id == data.founder_id)) or 0
     return ChoiceResult(
         signal=SignalView(
             text=option["signal"],
-            evidence=f"Chose {option['id']} in situation {situation.sequence_no}",
+            still_unclear=option.get("still_unclear") or "Whether this holds when the stakes are real.",
+            decisions_so_far=decisions,
+            evidence=(
+                f"Chose {option['id']} in this optional situation"
+                if session.kind == "probe"
+                else f"Chose {option['id']} in situation {situation.sequence_no}"
+            ),
             confidence=OBSERVED_CONFIDENCE,
         ),
         done=situation.sequence_no >= session.situation_count,
@@ -319,7 +373,9 @@ def _clean(text) -> str:
     return _BROKEN_RUPEE.sub("₹", str(text or "")).strip()
 
 
-def _check_situation(data: dict, open_gaps: list[InformationGap], last_dimension: str | None) -> None:
+def _check_situation(
+    data: dict, open_gaps: list[InformationGap], last_dimension: str | None, check_topic: bool = True
+) -> None:
     """Raising here makes the AI client retry once, with the reason logged in ai_calls."""
     options = data.get("options")
     if not isinstance(options, list) or len(options) < 4:
@@ -329,6 +385,8 @@ def _check_situation(data: dict, open_gaps: list[InformationGap], last_dimension
     if not str(data.get("situation", "")).strip():
         raise ValueError("empty situation")
 
+    if not check_topic:  # the founder picked the topic; only the situation itself is checked
+        return
     dimension = _key(data.get("dimension"))
     if not dimension:
         raise ValueError("no dimension chosen")
@@ -389,13 +447,14 @@ def _choice_for(db: Session, situation_id: uuid.UUID) -> Choice | None:
     return db.scalar(select(Choice).where(Choice.situation_id == situation_id))
 
 
-def _history(db: Session, session_id: uuid.UUID) -> list[dict]:
-    rows = db.execute(
-        select(Situation, Choice)
-        .join(Choice, Choice.situation_id == Situation.id)
-        .where(Situation.session_id == session_id)
-        .order_by(Situation.sequence_no)
-    )
+def _history(db: Session, session_id: uuid.UUID | None, founder_id: uuid.UUID) -> list[dict]:
+    """This session's answered situations, or every decision the founder has made (session_id=None)."""
+    query = select(Situation, Choice).join(Choice, Choice.situation_id == Situation.id)
+    if session_id is not None:
+        query = query.where(Situation.session_id == session_id).order_by(Situation.sequence_no)
+    else:
+        query = query.where(Choice.user_id == founder_id).order_by(Choice.created_at)
+    rows = db.execute(query)
     return [
         {
             "situation": s.situation_text,
@@ -410,6 +469,7 @@ def _history(db: Session, session_id: uuid.UUID) -> list[dict]:
 
 def _view(session: DiscoverySession, s: Situation) -> SituationView:
     return SituationView(
+        kind="probe" if session.kind == "probe" else "discovery",
         session_id=session.id,
         situation_id=s.id,
         sequence_no=s.sequence_no,

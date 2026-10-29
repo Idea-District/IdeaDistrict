@@ -14,6 +14,8 @@ const KEYS = {
   founderId: "idd.founderId",
   founderName: "idd.founderName",
   sessionId: "idd.sessionId",
+  /** One optional "probe" situation on a gap — separate from the main discovery session. */
+  probeSessionId: "idd.probeSessionId",
 } as const;
 
 type Key = keyof typeof KEYS;
@@ -46,19 +48,23 @@ export const session = {
   /** Starts a fresh founder: clears everything from a previous run. */
   setFounder(id: string, name: string) {
     write("sessionId", null);
+    write("probeSessionId", null);
+    memory.probeSituation = null;
     memory.known = null;
     memory.firstSituation = null;
     write("founderName", name);
     write("founderId", id);
   },
   setSessionId: (id: string) => write("sessionId", id),
+  setProbeSessionId: (id: string) => write("probeSessionId", id),
 };
 
 /** In-memory hand-offs between screens (lost on reload, which is fine: screens refetch). */
 export const memory: {
   known: KnownUnknown | null;
   firstSituation: SituationView | null;
-} = { known: null, firstSituation: null };
+  probeSituation: SituationView | null;
+} = { known: null, firstSituation: null, probeSituation: null };
 
 function subscribe(cb: () => void) {
   listeners.add(cb);

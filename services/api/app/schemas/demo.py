@@ -37,8 +37,10 @@ class KnownItem(BaseModel):
 
 
 class UnknownItem(BaseModel):
+    id: uuid.UUID
     dimension: str
     label: str
+    why_it_matters: str
 
 
 class KnownUnknown(BaseModel):
@@ -52,6 +54,7 @@ class SituationOption(BaseModel):
 
 
 class SituationView(BaseModel):
+    kind: Literal["discovery", "probe"] = "discovery"
     session_id: uuid.UUID
     situation_id: uuid.UUID
     sequence_no: int
@@ -72,6 +75,8 @@ class ChoiceIn(FounderRef):
 
 class SignalView(BaseModel):
     text: str
+    still_unclear: str  # what this one choice can't tell us yet
+    decisions_so_far: int  # how much evidence the ID now rests on
     evidence: str
     type: Literal["observed"] = "observed"
     confidence: float
@@ -101,6 +106,7 @@ class PersonAttribute(BaseModel):
 
 
 class Gap(BaseModel):
+    id: uuid.UUID
     dimension: str
     question: str
     why_it_matters: str

@@ -1,6 +1,8 @@
 "use client";
 
-import { AppBar, CalmState, ErrorNotice, Heading, PhoneFrame, Tag, WhyPanel } from "@/components/ui";
+import { AppBar, CalmState, ErrorNotice, Heading, PhoneFrame, Sub, WhyPanel } from "@/components/ui";
+
+import { GapCards } from "./GapCard";
 
 import { useFounderIdData } from "./useFounderIdData";
 
@@ -21,20 +23,13 @@ export function GapsList({ founderId }: { founderId: string }) {
       ) : (
         <div className="fade-in">
           <Heading>What we still don&rsquo;t know.</Heading>
+          <Sub className="mt-2">Each one is optional. Tap one to explore it with a single situation.</Sub>
           {gaps.length === 0 ? (
             <p className="mt-4 text-[15px] text-ink2">No open questions right now.</p>
           ) : (
-            <ul className="mt-5 divide-y divide-rule rounded-2xl bg-sand px-[15px]">
-              {gaps.map((g, i) => (
-                <li key={`${g.dimension}-${i}`} className="py-3.5">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-[15px] font-bold leading-snug">{g.question}</p>
-                    <Tag kind="unknown">{g.status === "probing" ? "Probing" : "Unknown"}</Tag>
-                  </div>
-                  <p className="mt-1 text-[12.5px] leading-relaxed text-ink3">{g.why_it_matters}</p>
-                </li>
-              ))}
-            </ul>
+            <div className="mt-5">
+              <GapCards gaps={gaps} founderId={founderId} />
+            </div>
           )}
           <WhyPanel label="Your ID is not finished" className="mt-5">
             <p>We don&rsquo;t want to define you from a handful of answers.</p>

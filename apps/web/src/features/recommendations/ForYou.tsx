@@ -8,6 +8,7 @@ import { CalmState, ErrorNotice, PhoneFrame, Section, TabBar } from "@/component
 import { api } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
 
+import { GapSuggestions } from "./GapSuggestions";
 import { MatchCard } from "./MatchCard";
 import { PendingOutcomes } from "./PendingOutcomes";
 import { TellMeMore } from "./TellMeMore";
@@ -94,6 +95,7 @@ export function ForYou({ founderId }: { founderId: string }) {
           <div className="mt-5">
             <TellMeMore founderId={founderId} onLookAgain={lookAgain} />
           </div>
+          <GapSuggestions founderId={founderId} />
         </div>
       )}
     </PhoneFrame>

@@ -27,6 +27,8 @@ class DiscoverySession(TableMixin, Base):
 
     user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     status: Mapped[str] = mapped_column(String(20), default="active")  # active | complete | abandoned
+    # "discovery" = the five-situation run; "probe" = one optional situation on a gap the founder tapped.
+    kind: Mapped[str] = mapped_column(String(12), default="discovery")
     situation_count: Mapped[int] = mapped_column(Integer)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

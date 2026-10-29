@@ -83,3 +83,43 @@ def test_investor_for_a_non_funding_need_is_rejected_and_retried(client, db, inv
     assert rec == {"kind": "none", "reasons": ["Nobody fits yet."]}
     failed = db.query(AiCall).filter_by(purpose="match", status="failed").one()
     assert "only be suggested as a funding" in failed.error
+
+
+def test_investors_never_receive_suggestions(client, investor):
+    rec = client.get("/v1/recommendations", params={"founder_id": str(investor.id)}).json()
+    assert rec["kind"] == "none" and "Investors don't get suggestions" in rec["reasons"][0]
+
+
+def test_no_match_after_passing_on_names_who_was_passed_on(client, db, investor):
+    """Abdul's case: the founder declined the investor; the empty result must not pretend she doesn't exist."""
+    none_reply = {**capital_match(), "match": "NONE", "no_match_reasons": ["No other investor backs this stage."]}
+    rec, provider = _run(client, db, [capital_match(), none_reply])
+    fid = db.query(User).filter_by(name="Asha").one().id
+    app.dependency_overrides[get_ai] = lambda: AIClient(db, provider)
+    try:
+        client.post(f"/v1/recommendations/{rec['id']}/respond", json={"founder_id": str(fid), "response": "decline"})
+        # Ritu was the only candidate, so the app answers without asking the model.
+        again = client.get("/v1/recommendations", params={"founder_id": str(fid)}).json()
+    finally:
+        app.dependency_overrides.pop(get_ai, None)
+    assert again == {"kind": "none", "reasons": ["You passed on Ritu Kapoor. Nobody else here fits as well yet."]}
+
+
+def test_passed_on_people_are_named_to_the_model(client, db, investor):
+    other = User(name="Vikram Shetty", city="Bengaluru")
+    db.add(other)
+    db.flush()
+    db.add(IdAttribute(user_id=other.id, dimension="Execution", insight="Ships fast.", confidence="medium",
+                       strength=0.5, evidence_summary="4 of 5", version=1))
+    db.commit()
+    none_reply = {**capital_match(), "match": "NONE", "no_match_reasons": ["Vikram doesn't back companies."]}
+    rec, provider = _run(client, db, [capital_match(), none_reply])
+    fid = db.query(User).filter_by(name="Asha").one().id
+    app.dependency_overrides[get_ai] = lambda: AIClient(db, provider)
+    try:
+        client.post(f"/v1/recommendations/{rec['id']}/respond", json={"founder_id": str(fid), "response": "decline"})
+        again = client.get("/v1/recommendations", params={"founder_id": str(fid)}).json()
+    finally:
+        app.dependency_overrides.pop(get_ai, None)
+    assert 'already_passed_on: ["Ritu Kapoor"]' in provider.prompts[-1]
+    assert again["reasons"] == ["You passed on Ritu Kapoor. Nobody else here fits as well yet.", "Vikram doesn't back companies."]

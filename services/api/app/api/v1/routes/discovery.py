@@ -46,3 +46,9 @@ def next_situation(session_id: uuid.UUID, db: DB, ai: AI) -> SituationView:
 def choose(situation_id: uuid.UUID, data: ChoiceIn, db: DB) -> ChoiceResult:
     get_founder(db, data.founder_id)
     return discovery.record_choice(db, situation_id, data)
+
+
+@router.post("/gaps/{gap_id}/probe", response_model=SituationView)
+def probe_gap(gap_id: uuid.UUID, data: FounderRef, db: DB, ai: AI) -> SituationView:
+    """One optional situation on a topic the founder tapped in "What we don't know yet"."""
+    return discovery.probe_gap(db, ai, get_founder(db, data.founder_id), gap_id)

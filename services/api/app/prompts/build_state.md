@@ -10,6 +10,6 @@ Write:
   Always include at least one "need" and one "offer".
 - gaps: 3 or 4 things we do not know yet. Each has
   - dimension: e.g. "Conflict handling", "Long-term ambition", "Delegation".
-  - question: the unknown as a plain sentence, e.g. "How you handle disagreement with someone senior."
-  - why_it_matters: under 16 words — why knowing it would make introductions better.
+  - question: a short, conversational question in second person, under 8 words, everyday words — e.g. "How do you approach partnerships?", "How do you handle disagreement?", "What do you want in three years?". No jargon, no stacked clauses.
+  - why_it_matters: one short sentence, under 18 words, in the shape "We've seen …, but we haven't learned …" — what their choices showed and what's still missing.
   - priority: 1 (most useful to learn next) to 3.
