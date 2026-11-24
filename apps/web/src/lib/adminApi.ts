@@ -133,6 +133,97 @@ export class AdminApiError extends ApiError {
 }
 
 /** True when the token was rejected: the console should sign out and ask again. */
+/* ── Users & data (the team's view of everyone; never message text) ── */
+
+export type Counts = Record<string, number>;
+export type DataSummary = {
+  users: Counts;
+  founders: Counts;
+  investors: Counts;
+  matching: Counts;
+  connections: Counts;
+  cafe: Counts;
+  ai: { calls: number; cost_usd: number; tokens: number; failed: number };
+};
+export type PersonRef = { id: string; name: string; type: string; organisation: string } | null;
+export type FounderRow = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  city: string;
+  building: string;
+  stage: string;
+  id_built: boolean;
+  visible_to_investors: boolean;
+  connections: number;
+  joined_at: string;
+  last_seen_at: string | null;
+};
+export type ConnectionRow = {
+  id: string;
+  direction: "sent" | "received";
+  with: PersonRef;
+  status: string;
+  origin: string;
+  note: string;
+  sent_at: string;
+  answered_at: string | null;
+};
+export type ConversationRow = {
+  id: string;
+  with: PersonRef[];
+  messages: number;
+  sent_by_them: number;
+  started_at: string | null;
+  last_message_at: string | null;
+};
+export type EventRow = { event: string; at: string };
+export type FounderDetail = {
+  profile: Record<string, string | null>;
+  privacy: { visible_to_investors: boolean; allow_introductions: boolean };
+  rooms: { room: string; audience: string; to_investors: boolean }[];
+  headline: string;
+  told_us: { question: string; answer: string; choice: string | null; at: string | null }[];
+  situations: { situation: string; question: string; probing: string; chose: string; why: string | null }[];
+  state: { field: string; facet: string; value: string; confidence: string; source: string }[];
+  reads: { dimension: string; facet: string; insight: string; confidence: string; strength: number; evidence: string }[];
+  gaps: { dimension: string; question: string; status: string }[];
+  journey: { kind: string; title: string; on: string; learned: string }[];
+  experiments: { title: string; status: string; tried: string; happened: string; learned: string }[];
+  suggestions: { with: PersonRef; direction: string; type: string; status: string; confidence: string; why_them: string; at: string }[];
+  connections: ConnectionRow[];
+  conversations: ConversationRow[];
+  investor_pipelines: { investor: PersonRef; stage: string }[];
+  activity: Counts;
+  ai: DataSummary["ai"];
+  recent_events: EventRow[];
+};
+export type InvestorRow = {
+  id: string;
+  name: string;
+  firm: string;
+  email: string | null;
+  sectors: string[];
+  has_thesis: boolean;
+  introductions: number;
+  accepted: number;
+  waiting: number;
+  in_pipeline: number;
+  opportunities: number;
+  joined_at: string;
+  last_seen_at: string | null;
+};
+export type InvestorDetail = {
+  profile: Record<string, string | null>;
+  thesis: { firm: string; sectors: string[]; stages: string[]; cheque: string; geography: string } | null;
+  introductions: ConnectionRow[];
+  pipeline: { founder: PersonRef; stage: string; note: string }[];
+  opportunities: { id: string; kind: string; title: string; archived: boolean; posted_at: string; interested: number; saved: number }[];
+  conversations: ConversationRow[];
+  recent_events: EventRow[];
+};
+
 export function isAuthError(e: unknown): boolean {
   return e instanceof ApiError && e.status === 401;
 }
@@ -192,6 +283,12 @@ export function createAdminApi(token: string) {
     addOpportunity: (input: NewOpportunity) =>
       request<{ id: string }>("/opportunities", { method: "POST", body: JSON.stringify(input) }),
     archiveOpportunity: (oppId: string) => request<{ ok: true }>(`/opportunities/${id(oppId)}`, { method: "DELETE" }),
+
+    dataSummary: () => request<DataSummary>("/data/summary"),
+    dataFounders: () => request<FounderRow[]>("/data/founders"),
+    dataFounder: (founderId: string) => request<FounderDetail>(`/data/founders/${id(founderId)}`),
+    dataInvestors: () => request<InvestorRow[]>("/data/investors"),
+    dataInvestor: (investorId: string) => request<InvestorDetail>(`/data/investors/${id(investorId)}`),
   };
 }
 

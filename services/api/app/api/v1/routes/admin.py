@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from app.api.deps import AI, DB
 from app.core.config import get_settings
-from app.services import cafe, connect, topics_admin
+from app.services import admin_data, cafe, connect, topics_admin
 
 
 def require_admin(x_admin_token: Annotated[str | None, Header()] = None) -> None:
@@ -179,3 +179,33 @@ def add_opportunity(data: OpportunityAdminIn, db: DB) -> dict:
 def archive_opportunity(opp_id: uuid.UUID, db: DB) -> dict:
     connect.archive_opportunity(db, opp_id)
     return {"ok": True}
+
+
+# ── Users & data: everyone in the community, for the team ──────────────
+
+data_router = APIRouter(prefix="/admin/data", tags=["admin"], dependencies=[Depends(require_admin)])
+
+
+@data_router.get("/summary")
+def data_summary(db: DB) -> dict:
+    return admin_data.summary(db)
+
+
+@data_router.get("/founders")
+def data_founders(db: DB) -> list[dict]:
+    return admin_data.founders(db)
+
+
+@data_router.get("/founders/{founder_id}")
+def data_founder(founder_id: uuid.UUID, db: DB) -> dict:
+    return admin_data.founder(db, founder_id)
+
+
+@data_router.get("/investors")
+def data_investors(db: DB) -> list[dict]:
+    return admin_data.investors(db)
+
+
+@data_router.get("/investors/{investor_id}")
+def data_investor(investor_id: uuid.UUID, db: DB) -> dict:
+    return admin_data.investor(db, investor_id)

@@ -36,6 +36,7 @@ api_router.include_router(admin.topics_router)
 api_router.include_router(toolkit.router)
 api_router.include_router(connect.router)
 api_router.include_router(admin.opps_router)
+api_router.include_router(admin.data_router)
 api_router.include_router(me.router)
 api_router.include_router(investor.router)
 

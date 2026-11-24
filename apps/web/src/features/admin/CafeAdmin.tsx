@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 
 import type { AdminCafe } from "@idea-district/api-client";
@@ -115,6 +116,7 @@ export function CafeAdmin() {
               {data ? <p className="text-[13px] text-ink3">Today is {dayLabel(data.today, true)}</p> : null}
             </div>
           </div>
+          {token ? <AdminNav current="cafe" /> : null}
           {token ? (
             <div className="flex gap-2">
               <button type="button" className={smallButton()} onClick={() => void refresh()}>
@@ -132,7 +134,23 @@ export function CafeAdmin() {
   );
 }
 
-function TokenGate({ message, onSubmit }: { message: string | null; onSubmit: (token: string) => void }) {
+/** Switch between the two halves of the admin: Cafe content, and Users & data. */
+export function AdminNav({ current }: { current: "cafe" | "data" }) {
+  const item = (here: boolean) =>
+    `inline-flex min-h-[40px] items-center rounded-full px-4 text-[14px] font-bold ${focus} ${here ? "bg-espresso text-cream" : "text-ink2 hover:bg-sand2"}`;
+  return (
+    <nav aria-label="Admin" className="flex gap-1 rounded-full border border-rule bg-card p-1">
+      <Link href="/admin/cafe" aria-current={current === "cafe" ? "page" : undefined} className={item(current === "cafe")}>
+        Cafe content
+      </Link>
+      <Link href="/admin/data" aria-current={current === "data" ? "page" : undefined} className={item(current === "data")}>
+        Users &amp; data
+      </Link>
+    </nav>
+  );
+}
+
+export function TokenGate({ message, onSubmit }: { message: string | null; onSubmit: (token: string) => void }) {
   const [value, setValue] = useState("");
 
   function submit(e: FormEvent) {
