@@ -43,6 +43,16 @@ const CafeScene = dynamic(() => import("./scene/CafeScene"), {
   ),
 });
 
+/** The cozy, storybook version of the same cafe (trial page /cafe/cozy). */
+const CozyCafeScene = dynamic(() => import("./cozy/CozyCafeScene"), {
+  ssr: false,
+  loading: () => (
+    <div className="fixed inset-0 flex flex-col items-center justify-center gap-5 bg-espresso text-cream">
+      <p className="text-[15px] font-semibold tracking-wide">Opening the cafe door…</p>
+    </div>
+  ),
+});
+
 /* The 3D room or the plain list: a per-browser choice, remembered. */
 const VIEW_KEY = "cafe-view";
 const viewListeners = new Set<() => void>();
@@ -124,7 +134,7 @@ function FlatRoom({ founderId }: { founderId: string }) {
 }
 
 /** B1 · The District Cafe: a room you walk into, full screen. The list view is one tap away. */
-export function CafeHome({ founderId }: { founderId: string }) {
+export function CafeHome({ founderId, variant = "real" }: { founderId: string; variant?: "real" | "cozy" }) {
   const name = useStored("founderName");
   const view = useView();
   const { data, error, retry } = useLoad(() => api.cafeHome(founderId), `${founderId}`);
@@ -134,7 +144,11 @@ export function CafeHome({ founderId }: { founderId: string }) {
   if (view === "list") return list;
   return (
     <SceneBoundary fallback={list}>
-      <CafeScene founderId={founderId} name={name ?? null} home={data} tables={tables ?? []} fallback={list} onListView={() => setView("list")} />
+      {variant === "cozy" ? (
+        <CozyCafeScene founderId={founderId} name={name ?? null} home={data} tables={tables ?? []} fallback={list} onListView={() => setView("list")} />
+      ) : (
+        <CafeScene founderId={founderId} name={name ?? null} home={data} tables={tables ?? []} fallback={list} onListView={() => setView("list")} />
+      )}
     </SceneBoundary>
   );
 }

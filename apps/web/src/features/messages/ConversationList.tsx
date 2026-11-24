@@ -31,7 +31,7 @@ const MessagesScene = dynamic(() => import("./scene/MessagesScene"), {
 const VIEW_KEY = "messages-view";
 
 /** Messages: conversations exist only after an accepted introduction. */
-export function ConversationList({ founderId }: { founderId: string }) {
+export function ConversationList({ founderId, variant = "real" }: { founderId: string; variant?: "real" | "cozy" }) {
   const [list, setList] = useState<ConversationSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -127,7 +127,7 @@ export function ConversationList({ founderId }: { founderId: string }) {
   if (view === "list" || error) return page;
   return (
     <SceneBoundary fallback={page}>
-      <MessagesScene founderId={founderId} list={list} reload={reload} fallback={page} onListView={() => setViewMode(VIEW_KEY, "list")} />
+      <MessagesScene founderId={founderId} list={list} reload={reload} fallback={page} onListView={() => setViewMode(VIEW_KEY, "list")} variant={variant} />
     </SceneBoundary>
   );
 }

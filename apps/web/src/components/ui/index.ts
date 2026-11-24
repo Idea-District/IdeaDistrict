@@ -3,6 +3,7 @@ export { Avatar } from "./Avatar";
 export { Button, ButtonLink, buttonClass } from "./Button";
 export { CalmState } from "./CalmState";
 export { ConfidenceWord, ReadStrength } from "./Confidence";
+export { CozyMenu, cozyTabs } from "./CozyMenu";
 export { ErrorNotice } from "./ErrorNotice";
 export { IdMark } from "./IdMark";
 export { Heading, Label, Sub } from "./Label";

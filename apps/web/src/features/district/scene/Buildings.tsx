@@ -25,7 +25,7 @@ export const ROOM_LABEL: Record<Room, string> = {
   progress: "Progress",
   capabilities: "Capabilities",
 };
-const HINT: Record<Room, string> = {
+export const HINT: Record<Room, string> = {
   journey: "Milestones and decisions",
   business: "What you're building",
   needs: "What would help most",

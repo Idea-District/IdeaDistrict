@@ -19,6 +19,8 @@ type Interact = {
   select: (s: MSpot) => void;
   dragged: { current: boolean };
   reduced: boolean;
+  /** Paper lanterns for the cozy pier, instead of the real brass ones. */
+  cozy?: boolean;
 };
 
 const WARM = new Color("#ffcf96");
@@ -28,17 +30,39 @@ const EMBER = new Color(C.ember);
  * A real brass-and-glass lantern with a flame inside. `mat` is the flame, so the caller can make it
  * flicker and brighten.
  */
-function LanternBody({ glow, color, mat }: { glow: number; color: Color; mat?: React.Ref<MeshStandardMaterial> }) {
+function LanternBody({ glow, color, mat, cozy = false }: { glow: number; color: Color; mat?: React.Ref<MeshStandardMaterial>; cozy?: boolean }) {
   return (
     <group>
-      <WorldModelClone name="lantern" position={[0, -0.43, 0]} scale={3} />
+      {cozy ? <PaperLantern /> : <WorldModelClone name="lantern" position={[0, -0.43, 0]} scale={3} />}
       <mesh position={[0, -0.06, 0]}>
-        <sphereGeometry args={[0.085, 14, 10]} />
+        <sphereGeometry args={[cozy ? 0.11 : 0.085, 14, 10]} />
         <meshStandardMaterial ref={mat} color="#fff2d6" emissive={color} emissiveIntensity={glow} toneMapped={false} />
       </mesh>
       {/* An easy target to click, a little bigger than the lantern itself */}
       <mesh visible={false}>
         <boxGeometry args={[0.6, 1, 0.6]} />
+      </mesh>
+    </group>
+  );
+}
+
+/** A storybook paper lantern: a glowing paper drum between two dark caps, on a little hanger. */
+function PaperLantern() {
+  return (
+    <group position={[0, -0.06, 0]}>
+      <mesh>
+        <cylinderGeometry args={[0.2, 0.2, 0.36, 8]} />
+        <meshStandardMaterial flatShading color="#f6dcb0" emissive="#ffb86a" emissiveIntensity={0.9} transparent opacity={0.85} roughness={1} />
+      </mesh>
+      {[0.2, -0.2].map((y) => (
+        <mesh key={y} position={[0, y, 0]}>
+          <cylinderGeometry args={[y > 0 ? 0.12 : 0.15, y > 0 ? 0.15 : 0.12, 0.06, 8]} />
+          <meshStandardMaterial flatShading color="#3b2f28" roughness={0.8} />
+        </mesh>
+      ))}
+      <mesh position={[0, 0.3, 0]}>
+        <torusGeometry args={[0.06, 0.012, 6, 12]} />
+        <meshStandardMaterial color="#3b2f28" />
       </mesh>
     </group>
   );
@@ -91,7 +115,7 @@ export function Lantern({ c, at, i, io, lit }: { c: ConversationSummary; at: V3;
     >
       <group ref={g} position={at}>
         <group scale={1.9}>
-          <LanternBody glow={base} color={color} mat={mat} />
+          <LanternBody glow={base} color={color} mat={mat} cozy={io.cozy} />
         </group>
         {lit ? <pointLight position={[0, -0.05, 0]} intensity={unread ? 7 : 4.5} distance={7} decay={1.6} color={color} /> : null}
         {io.spot === "overview" ? (
@@ -140,7 +164,7 @@ export function EmptyLantern({ io }: { io: Interact }) {
       }}
     >
       <group scale={0.75}>
-        <LanternBody glow={isHover ? 0.5 : 0.05} color={WARM} />
+        <LanternBody glow={isHover ? 0.5 : 0.05} color={WARM} cozy={io.cozy} />
       </group>
       {io.spot === "overview" ? (
         <Html position={[0, 0.65, 0]} center distanceFactor={8} zIndexRange={[8, 0]} style={{ pointerEvents: "none" }}>
@@ -155,7 +179,7 @@ export function EmptyLantern({ io }: { io: Interact }) {
 }
 
 /** When you send, a small lantern lifts off the end of the pier and floats out to theirs. */
-export function SentLantern({ to, reduced }: { to: V3; reduced: boolean }) {
+export function SentLantern({ to, reduced, cozy = false }: { to: V3; reduced: boolean; cozy?: boolean }) {
   const g = useRef<Group>(null);
   const t0 = useRef<number | null>(null);
   const from: V3 = [0, 1.3, PIER_END + 0.2];
@@ -171,7 +195,7 @@ export function SentLantern({ to, reduced }: { to: V3; reduced: boolean }) {
   });
   return (
     <group ref={g} position={from} scale={0.45}>
-      <LanternBody glow={3} color={EMBER} />
+      <LanternBody glow={3} color={EMBER} cozy={cozy} />
       <pointLight intensity={2} distance={3} color={C.ember} />
     </group>
   );

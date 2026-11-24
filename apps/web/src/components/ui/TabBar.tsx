@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useStored } from "@/lib/session";
 import { useUnreadCount } from "@/lib/useUnreadCount";
 
+import { CozyMenu } from "./CozyMenu";
 import { IdMark } from "./IdMark";
 
 /* The four places in the founder app (prototype v1): Cafe, District, People, Messages.
@@ -170,6 +171,7 @@ export function SideNav() {
         <NavIcon name="Ask ID" size={18} />
         Ask ID
       </Link>
+      <CozyMenu />
       <div className="mt-auto">
         <Link
           href="/you"

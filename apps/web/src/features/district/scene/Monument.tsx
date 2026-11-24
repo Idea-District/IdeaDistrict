@@ -2,7 +2,7 @@
 
 import { Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, type ReactNode } from "react";
 import { Color, type Group, type Mesh } from "three";
 
 import type { FounderID } from "@idea-district/api-client";
@@ -35,13 +35,23 @@ const HALO = new Color(C.ember).multiplyScalar(2.4);
  * Your ID: a Persimmon pixel monument in the plaza. It grows a level for every read ID has of you,
  * your initial turns at the top, and what we know orbits around it.
  */
-export function Monument({ data }: { data: FounderID }) {
+/** The real-marble plinth, for the realistic District. */
+function MarblePlinth() {
+  const marble = useSurface("marble", [3, 0.4]);
+  return (
+    <mesh position={[0, 0.25, 0]} castShadow receiveShadow>
+      <cylinderGeometry args={[1.25, 1.4, 0.5, 48]} />
+      <meshPhysicalMaterial {...marble} roughness={1} clearcoat={0.4} clearcoatRoughness={0.3} />
+    </mesh>
+  );
+}
+
+export function Monument({ data, plinth = <MarblePlinth /> }: { data: FounderID; plinth?: ReactNode }) {
   const { reduced, spot } = useDistrict();
   const crown = useRef<Mesh>(null);
   const halo = useRef<Mesh>(null);
   const orbit = useRef<Group>(null);
   const items = useMemo(() => orbitItems(data), [data]);
-  const marble = useSurface("marble", [3, 0.4]);
   const levels = Math.max(2, Math.min(6, data.person.length));
   const initial = data.founder.name.slice(0, 1).toUpperCase();
   const face = useCanvasTexture(
@@ -85,11 +95,7 @@ export function Monument({ data }: { data: FounderID }) {
 
   return (
     <Spot id="id" name={`${data.founder.name}'s ID`} hint="Your ID" marker={[0, top + 1.2, 0]}>
-      {/* Plinth */}
-      <mesh position={[0, 0.25, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[1.25, 1.4, 0.5, 48]} />
-        <meshPhysicalMaterial {...marble} roughness={1} clearcoat={0.4} clearcoatRoughness={0.3} />
-      </mesh>
+      {plinth}
       <mesh position={[0, 0.52, 0]} receiveShadow>
         <cylinderGeometry args={[1.05, 1.05, 0.06, 40]} />
         <meshStandardMaterial color={C.ink} roughness={0.5} />

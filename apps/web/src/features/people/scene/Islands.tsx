@@ -136,7 +136,7 @@ function Palm({ at, s = 1 }: { at: V3; s?: number }) {
 }
 
 /** A name over each island: only their public card, never anything they kept private. */
-function NameTag({ y, name, line, accent }: { y: number; name: string; line: string; accent?: string }) {
+export function NameTag({ y, name, line, accent }: { y: number; name: string; line: string; accent?: string }) {
   const { spot } = usePeople();
   if (spot !== "overview") return null;
   return (
@@ -368,7 +368,7 @@ export function Bottles({ count }: { count: number }) {
   );
 }
 
-const FLAG: Record<OpportunityKind, string> = { pilot_call: C.ember, challenge: "#c9a227", problem: C.forest2, circle: C.cream };
+export const FLAG: Record<OpportunityKind, string> = { pilot_call: C.ember, challenge: "#c9a227", problem: C.forest2, circle: C.cream };
 
 /** A real tall ship at anchor, flying a flag for what kind of opportunity it carries. */
 function Ship({ at, kind, i }: { at: V3; kind: OpportunityKind; i: number }) {

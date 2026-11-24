@@ -38,7 +38,7 @@ const PeopleScene = dynamic(() => import("@/features/people/scene/PeopleScene"),
 const VIEW_KEY = "people-view";
 
 /** Screens 13–14: one intersection, or an honest no-match with Tell me more. */
-export function ForYou({ founderId }: { founderId: string }) {
+export function ForYou({ founderId, variant = "real" }: { founderId: string; variant?: "real" | "cozy" }) {
   const view = useViewMode(VIEW_KEY);
   const name = useStored("founderName");
   const conns = useLoad(() => api.connections(founderId), founderId);
@@ -149,6 +149,7 @@ export function ForYou({ founderId }: { founderId: string }) {
   return (
     <SceneBoundary fallback={list}>
       <PeopleScene
+        variant={variant}
         founderId={founderId}
         name={name ?? "You"}
         rec={rec}

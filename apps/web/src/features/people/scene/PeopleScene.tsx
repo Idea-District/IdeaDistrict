@@ -37,14 +37,11 @@ import { api } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
 
 import { PeopleContext, type PeopleState } from "./context";
-import {
-  Bottles,
-  Bridge,
-  Harbour,
-  HomeIsland,
-  Lighthouse,
-  PersonIsland,
-} from "./Islands";
+import * as Cozy from "../cozy/CozyIslands";
+import { cozySky } from "@/features/district/cozy/CozyWorld";
+import { CozySea } from "@/features/district/cozy/CozySea";
+import * as Real from "./Islands";
+import { Bottles } from "./Islands";
 import {
   HARBOUR,
   BOTTLES,
@@ -57,7 +54,6 @@ import {
 import { PeoplePanel } from "./PeoplePanel";
 import { SEA, Sea } from "./Sea";
 
-preloadWorld(["ship", "buoy", "bench", "fern"]);
 
 const INTRO_KEY = "people-intro-seen";
 
@@ -179,6 +175,7 @@ export default function PeopleScene({
   onLookAgain,
   fallback,
   onListView,
+  variant = "real",
 }: {
   founderId: string;
   name: string;
@@ -192,6 +189,8 @@ export default function PeopleScene({
   onLookAgain: () => void;
   fallback: ReactNode;
   onListView: () => void;
+  /** "real": the realistic archipelago. "cozy": hexagon-tile islands on a storybook sea. */
+  variant?: "real" | "cozy";
 }) {
   const [webgl] = useState(hasWebGL);
   const [reduced] = useState(
@@ -207,6 +206,11 @@ export default function PeopleScene({
   const [dpr, setDpr] = useState(1.6);
   const dragged = useRef(false);
   const down = useRef<{ x: number; y: number } | null>(null);
+
+  // Only the realistic archipelago needs the downloaded models.
+  useEffect(() => {
+    if (variant === "real") preloadWorld(["ship", "buoy", "bench", "fern"]);
+  }, [variant]);
 
   useEffect(() => {
     if (intro) markSeen();
@@ -269,7 +273,9 @@ export default function PeopleScene({
           : spot.startsWith("p:")
             ? (people.find((p) => `p:${p.id}` === spot)?.at ?? null)
             : null;
-  const bg = SEA[tod].bg;
+  const cozy = variant === "cozy";
+  const bg = cozy ? cozySky(tod) : SEA[tod].bg;
+  const { HomeIsland, Lighthouse, PersonIsland, Bridge, Harbour } = cozy ? Cozy : Real;
   const evening = tod === "evening";
   const waiting = connections?.received.length ?? 0;
   const match = rec?.kind === "match" ? rec : null;
@@ -339,7 +345,7 @@ export default function PeopleScene({
           <fog attach="fog" args={[bg, 45, 110]} />
           <Rig spot={spot} target={target} intro={intro} reduced={reduced} />
           <Suspense fallback={null}>
-            <Sea tod={tod} reduced={reduced} />
+            {cozy ? <CozySea tod={tod} reduced={reduced} /> : <Sea tod={tod} reduced={reduced} />}
             <HomeIsland
               initial={name.slice(0, 1).toUpperCase()}
               evening={evening}
@@ -363,7 +369,7 @@ export default function PeopleScene({
           </Suspense>
           {fx ? <Effects tod={tod} /> : null}
         </Canvas>
-        <WorldLoading label="Sailing out" />
+        {cozy ? null : <WorldLoading label="Sailing out" />}
       </PeopleContext.Provider>
 
       <p className="sr-only" aria-live="polite">

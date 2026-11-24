@@ -1,9 +1,8 @@
 "use client";
 
-import { CameraControls, CameraControlsImpl, PerformanceMonitor } from "@react-three/drei";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { PerformanceMonitor } from "@react-three/drei";
+import { Canvas } from "@react-three/fiber";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { PerspectiveCamera } from "three";
 
 import type { Audience, DistrictOverview, FounderID, Room } from "@idea-district/api-client";
 
@@ -21,12 +20,13 @@ import { DistrictContext, type DistrictState } from "./context";
 import { DistrictPanel } from "./DistrictPanel";
 import { Fog } from "./Fog";
 import { Island, skyColor } from "./Island";
-import { LENS_LABEL, view, type DSpot } from "./layout";
+import { LENS_LABEL, type DSpot } from "./layout";
 import { Monument } from "./Monument";
+import { Rig } from "./Rig";
+import { CozyWorld, cozySky } from "../cozy/CozyWorld";
 
 const INTRO_KEY = "district-intro-seen";
 
-preloadWorld(["streetLamp", "bench", "fern", "lantern"]);
 const ROOMS: Room[] = ["journey", "business", "needs", "progress", "capabilities"];
 
 function storageGet(k: string) {
@@ -52,69 +52,6 @@ function hasWebGL() {
   }
 }
 
-/** Flies the camera to each place, keeps it beside its panel, and drifts slowly round when idle. */
-function Rig({ spot, intro, reduced }: { spot: DSpot; intro: boolean; reduced: boolean }) {
-  const controls = useRef<CameraControlsImpl>(null);
-  const size = useThree((s) => s.size);
-  const camera = useThree((s) => s.camera) as PerspectiveCamera;
-  const idle = useRef(0);
-  const first = useRef(true);
-
-  useEffect(() => {
-    const c = controls.current;
-    if (!c) return;
-    const narrow = size.width < size.height;
-    const [p, t] = view(spot, narrow);
-    if (first.current) {
-      first.current = false;
-      if (intro && !reduced) {
-        // Arriving: from high above the water, swoop down onto your District.
-        c.setLookAt(p[0] + 26, p[1] + 30, p[2] + 30, t[0], t[1], t[2], false);
-        c.smoothTime = 1.1;
-        void c.setLookAt(...p, ...t, true).then(() => {
-          c.smoothTime = 0.45;
-        });
-      } else {
-        c.setLookAt(...p, ...t, false);
-      }
-    } else {
-      void c.setLookAt(...p, ...t, !reduced);
-    }
-    // A panel covers part of the screen: shift the view so the place sits in what's left.
-    const dist = Math.hypot(p[0] - t[0], p[1] - t[1], p[2] - t[2]);
-    const half = dist * Math.tan(((camera.fov / 2) * Math.PI) / 180);
-    const panel = spot !== "overview";
-    const ox = panel && size.width >= 640 ? half * camera.aspect * (195 / (size.width / 2)) : 0;
-    const oy = panel && size.width < 640 ? half * 0.42 : 0;
-    void c.setFocalOffset(ox, oy, 0, !reduced);
-    idle.current = 0;
-  }, [spot, size.width, size.height, intro, reduced, camera]);
-
-  useFrame((_, dt) => {
-    const c = controls.current;
-    if (!c || reduced || spot !== "overview") return;
-    idle.current += dt;
-    if (idle.current > 5) c.rotate(dt * 0.035, 0, false);
-  });
-
-  return (
-    <CameraControls
-      ref={controls}
-      makeDefault
-      minDistance={4}
-      maxDistance={40}
-      minPolarAngle={0.15}
-      maxPolarAngle={1.38}
-      smoothTime={0.45}
-      mouseButtons={{ left: CameraControlsImpl.ACTION.ROTATE, middle: CameraControlsImpl.ACTION.DOLLY, right: CameraControlsImpl.ACTION.NONE, wheel: CameraControlsImpl.ACTION.DOLLY }}
-      touches={{ one: CameraControlsImpl.ACTION.TOUCH_ROTATE, two: CameraControlsImpl.ACTION.TOUCH_DOLLY, three: CameraControlsImpl.ACTION.NONE }}
-      onControlStart={() => {
-        idle.current = -4;
-      }}
-    />
-  );
-}
-
 /** C1 · My District as a small island you look down on and fly around. Browser only (see DistrictHome). */
 export default function DistrictScene({
   founderId,
@@ -123,6 +60,7 @@ export default function DistrictScene({
   setOverview,
   fallback,
   onListView,
+  variant = "real",
 }: {
   founderId: string;
   id: FounderID;
@@ -130,6 +68,8 @@ export default function DistrictScene({
   setOverview: (d: DistrictOverview) => void;
   fallback: ReactNode;
   onListView: () => void;
+  /** "real": the realistic island. "cozy": a storybook board of hexagon tiles. */
+  variant?: "real" | "cozy";
 }) {
   const [webgl] = useState(hasWebGL);
   const [reduced] = useState(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -148,6 +88,11 @@ export default function DistrictScene({
   useEffect(() => {
     if (intro) storageSet(INTRO_KEY);
   }, [intro]);
+
+  // Only the realistic island needs the downloaded models.
+  useEffect(() => {
+    if (variant === "real") preloadWorld(["streetLamp", "bench", "fern", "lantern"]);
+  }, [variant]);
 
   const select = useCallback(
     (s: DSpot) => {
@@ -198,7 +143,8 @@ export default function DistrictScene({
   if (!webgl) return <>{fallback}</>;
 
   const open = id.gaps.filter((g) => g.status !== "closed").length;
-  const bg = skyColor(tod);
+  const cozy = variant === "cozy";
+  const bg = cozy ? cozySky(tod) : skyColor(tod);
   const hiddenCount = overview ? ROOMS.filter((r) => {
     const a = overview.visibility[r];
     return lens === "connections" ? a === "private" : lens === "community" ? a !== "community" : false;
@@ -237,17 +183,23 @@ export default function DistrictScene({
             }}
           />
           <color attach="background" args={[bg]} />
-          <fog attach="fog" args={[bg, 45, 110]} />
+          <fog attach="fog" args={[bg, cozy ? 38 : 45, cozy ? 95 : 110]} />
           <Rig spot={spot} intro={intro} reduced={reduced} />
           <Suspense fallback={null}>
-            <Island tod={tod} />
-            <Monument data={id} />
-            <Buildings overview={overview} evening={tod === "evening"} />
-            <Fog open={open} />
+            {cozy ? (
+              <CozyWorld id={id} overview={overview} tod={tod} />
+            ) : (
+              <>
+                <Island tod={tod} />
+                <Monument data={id} />
+                <Buildings overview={overview} evening={tod === "evening"} />
+                <Fog open={open} />
+              </>
+            )}
           </Suspense>
           {fx ? <Effects tod={tod} /> : null}
         </Canvas>
-        <WorldLoading label="Landing on your island" />
+        {cozy ? null : <WorldLoading label="Landing on your island" />}
       </DistrictContext.Provider>
 
       <p className="sr-only" aria-live="polite">

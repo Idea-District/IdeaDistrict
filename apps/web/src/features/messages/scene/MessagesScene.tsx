@@ -20,10 +20,12 @@ import { EmptyLantern, Lantern, SentLantern } from "./Lanterns";
 import { lanternSpots, view, type MSpot, type V3 } from "./layout";
 import { MessagesPanel } from "./MessagesPanel";
 import { Pier } from "./Pier";
+import { CozyPier } from "../cozy/CozyPier";
+import { cozySky } from "@/features/district/cozy/CozyWorld";
+import { CozySea } from "@/features/district/cozy/CozySea";
 
 const INTRO_KEY = "pier-intro-seen";
 
-preloadWorld(["lantern", "streetLamp", "bench"]);
 
 function seen() {
   try {
@@ -115,12 +117,15 @@ export default function MessagesScene({
   reload,
   fallback,
   onListView,
+  variant = "real",
 }: {
   founderId: string;
   list: ConversationSummary[] | null;
   reload: () => void;
   fallback: ReactNode;
   onListView: () => void;
+  /** "real": the realistic pier. "cozy": a storybook pier with paper lanterns. */
+  variant?: "real" | "cozy";
 }) {
   const [webgl] = useState(hasWebGL);
   const [reduced] = useState(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -134,6 +139,11 @@ export default function MessagesScene({
   const dragged = useRef(false);
   const down = useRef<{ x: number; y: number } | null>(null);
   const flightKey = useRef(0);
+
+  // Only the realistic pier needs the downloaded models.
+  useEffect(() => {
+    if (variant === "real") preloadWorld(["lantern", "streetLamp", "bench"]);
+  }, [variant]);
 
   useEffect(() => {
     if (intro) markSeen();
@@ -182,12 +192,14 @@ export default function MessagesScene({
     window.setTimeout(() => setFlights((f) => f.filter((x) => x.key !== key)), 2600);
   }
 
-  const io = useMemo(() => ({ spot, hovered, setHovered, select, dragged, reduced }), [spot, hovered, select, reduced]);
+  const io = useMemo(() => ({ spot, hovered, setHovered, select, dragged, reduced, cozy: variant === "cozy" }), [spot, hovered, select, reduced, variant]);
 
   if (!webgl) return <>{fallback}</>;
 
   const target: V3 | null = spot.startsWith("c:") ? (spots[convos.findIndex((c) => `c:${c.id}` === spot)] ?? null) : null;
-  const bg = SEA[tod].bg;
+  const cozy = variant === "cozy";
+  const PierKind = cozy ? CozyPier : Pier;
+  const bg = cozy ? cozySky(tod) : SEA[tod].bg;
   const evening = tod === "evening";
   const unread = convos.reduce((n, c) => n + c.unread, 0);
   const chip = (active: boolean) =>
@@ -220,8 +232,8 @@ export default function MessagesScene({
         <fog attach="fog" args={[bg, 25, 80]} />
         <Rig spot={spot} target={target} intro={intro} reduced={reduced} />
         <Suspense fallback={null}>
-        <Sea tod={tod} reduced={reduced} />
-        <Pier
+        {cozy ? <CozySea tod={tod} reduced={reduced} /> : <Sea tod={tod} reduced={reduced} />}
+        <PierKind
           evening={evening}
           onLetterbox={() => {
             if (!dragged.current) select("letterbox");
@@ -233,14 +245,14 @@ export default function MessagesScene({
           <Lantern key={c.id} c={c} at={spots[i]} i={i} io={io} lit={i < 6} />
         ))}
         {flights.map((f) => (
-          <SentLantern key={f.key} to={f.to} reduced={reduced} />
+          <SentLantern key={f.key} to={f.to} reduced={reduced} cozy={cozy} />
         ))}
         </Suspense>
         {/* Fireflies over the water */}
         <Sparkles count={evening ? 70 : 30} position={[0, 2.2, -7]} scale={[16, 3, 10]} size={evening ? 3 : 2} speed={0.3} opacity={evening ? 0.9 : 0.5} color={evening ? "#ffd9a0" : "#fff3d6"} />
         {fx ? <Effects tod={tod} /> : null}
       </Canvas>
-      <WorldLoading label="Walking out onto the pier" />
+      {cozy ? null : <WorldLoading label="Walking out onto the pier" />}
 
       <p className="sr-only" aria-live="polite">
         {list === null

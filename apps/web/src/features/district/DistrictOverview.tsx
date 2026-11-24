@@ -133,7 +133,7 @@ function roomCards(data: FounderID, d: DistrictOverview | null): RoomCard[] {
 }
 
 /** C1 · My District: the orbit map on Forest Green, then the rooms. */
-export function DistrictOverview({ founderId }: { founderId: string }) {
+export function DistrictOverview({ founderId, variant = "real" }: { founderId: string; variant?: "real" | "cozy" }) {
   const { data, error, retry } = useFounderIdData(founderId);
   const [rooms, setRooms] = useState<DistrictOverview | null>(null);
   const view = useView();
@@ -174,7 +174,7 @@ export function DistrictOverview({ founderId }: { founderId: string }) {
   if (view === "list") return list;
   return (
     <SceneBoundary fallback={list}>
-      <DistrictScene founderId={founderId} id={data} overview={rooms} setOverview={setRooms} fallback={list} onListView={() => setView("list")} />
+      <DistrictScene founderId={founderId} id={data} overview={rooms} setOverview={setRooms} fallback={list} onListView={() => setView("list")} variant={variant} />
     </SceneBoundary>
   );
 }

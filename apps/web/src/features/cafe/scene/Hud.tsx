@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
-import { IdMark, NavIcon, tabs } from "@/components/ui";
+import { CozyMenu, IdMark, NavIcon, tabs } from "@/components/ui";
 import { useStored } from "@/lib/session";
 import { useUnreadCount } from "@/lib/useUnreadCount";
 
@@ -105,6 +105,7 @@ function MenuDrawer({ onClose, onList, current }: { onClose: () => void; onList:
           </svg>
           See it as a list
         </button>
+        <CozyMenu onPick={onClose} />
         <Link href="/you" className={`mt-auto flex min-h-[52px] items-center gap-3 rounded-[12px] px-2 hover:bg-sand ${focus}`}>
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-ember text-[16px] font-bold text-ink">{(name ?? "?").slice(0, 1).toUpperCase()}</span>
           <span className="flex flex-col leading-tight">
