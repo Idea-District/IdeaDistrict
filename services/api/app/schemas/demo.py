@@ -160,7 +160,9 @@ class RespondIn(FounderRef):
 
 class RespondOut(BaseModel):
     ok: Literal[True] = True
-    conversation_id: uuid.UUID | None
+    conversation_id: uuid.UUID | None  # set only once both people have agreed
+    request_id: uuid.UUID | None = None
+    waiting_for_them: bool = False
 
 
 class RingsTrueIn(FounderRef):

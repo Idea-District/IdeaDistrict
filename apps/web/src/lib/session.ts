@@ -55,7 +55,19 @@ export const session = {
     write("founderName", name);
     write("founderId", id);
   },
+  /** Forgets the founder on this device (sign out, or after deleting the account). */
+  signOut() {
+    memory.probeSituation = null;
+    memory.known = null;
+    memory.firstSituation = null;
+    write("sessionId", null);
+    write("probeSessionId", null);
+    write("founderName", null);
+    write("founderId", null);
+  },
   setSessionId: (id: string) => write("sessionId", id),
+  /** After a profile edit: the name shown in the nav and greetings. */
+  setFounderName: (name: string) => write("founderName", name),
   setProbeSessionId: (id: string) => write("probeSessionId", id),
 };
 

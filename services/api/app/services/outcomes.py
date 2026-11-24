@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.db.base import iso, utcnow
-from app.models import Recommendation, RecommendationOutcome, Signal, User
+from app.models import Conversation, Recommendation, RecommendationOutcome, Signal, User
 from app.schemas.demo import OutcomeIn, OutcomeOut, PendingOutcomeOut
 from app.services import interactions
 from app.services.errors import Conflict, NotFound
@@ -26,6 +26,7 @@ def pending(db: Session, founder_id: uuid.UUID) -> list[PendingOutcomeOut]:
             or_(Recommendation.user_a_id == founder_id, Recommendation.user_b_id == founder_id),
             Recommendation.status == "accepted",
             Recommendation.id.not_in(answered),
+            Recommendation.id.in_(select(Conversation.origin_recommendation_id).where(Conversation.origin_recommendation_id.is_not(None))),
         )
         .order_by(Recommendation.responded_at)
     )
@@ -43,8 +44,8 @@ def report(db: Session, recommendation_id: uuid.UUID, data: OutcomeIn) -> Outcom
     rec = db.get(Recommendation, recommendation_id)
     if rec is None or data.founder_id not in (rec.user_a_id, rec.user_b_id):
         raise NotFound("Introduction not found.")
-    if rec.status != "accepted":
-        raise Conflict("Outcomes are asked only after an introduction is accepted.")
+    if rec.status != "accepted" or not db.scalar(select(Conversation.id).where(Conversation.origin_recommendation_id == rec.id)):
+        raise Conflict("Outcomes are asked only after both of you agreed to meet.")
     already = db.scalar(
         select(RecommendationOutcome).where(
             RecommendationOutcome.recommendation_id == rec.id,

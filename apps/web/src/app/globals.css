@@ -21,9 +21,12 @@
   --color-espresso2: var(--espresso2);
   --color-good: var(--good);
   --color-mid: var(--mid);
+  --color-dust: var(--dust);
+  --color-ember-light: var(--ember-light);
 
-  --font-sans: var(--font-archivo), system-ui, sans-serif;
-  --font-inferred: var(--font-newsreader), Georgia, serif;
+  --font-sans: "Avenir Next", "Avenir", var(--font-fallback), system-ui, sans-serif;
+  --font-display: "Grift", "Avenir Next", "Avenir", var(--font-fallback), system-ui, sans-serif;
+  --font-inferred: "Avenir Next", "Avenir", var(--font-fallback), system-ui, sans-serif;
 }
 
 body {
@@ -36,7 +39,14 @@ body {
 .inferred {
   font-family: var(--font-inferred);
   font-style: italic;
+  font-weight: 500;
   color: var(--ember-deep);
+}
+
+/* Brand pixel blocks (guidelines v01): small Persimmon squares used as a quiet motif. */
+.pixel {
+  display: block;
+  background: var(--ember);
 }
 
 @keyframes fadein {
@@ -69,7 +79,114 @@ body {
   animation: link-pulse 2.4s ease-in-out infinite;
 }
 
+/* The 3D Cafe: a place's panel slides in as you walk up to it. */
+@keyframes cafe-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.cafe-panel {
+  animation: cafe-panel-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) 0.25s both;
+}
+
+/* The 3D Cafe's floating bits. */
+@keyframes cafe-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.cafe-label,
+.cafe-bubble {
+  animation: cafe-pop 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes cafe-dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+.cafe-talk span {
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: var(--ink2);
+  animation: cafe-dot 1.2s ease-in-out infinite;
+}
+.cafe-talk span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.cafe-talk span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes cafe-drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+.cafe-drawer {
+  animation: cafe-drawer-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes cafe-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+.cafe-scrim {
+  animation: cafe-fade-in 0.3s ease both;
+}
+@keyframes cafe-live {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 96, 56, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(255, 96, 56, 0);
+  }
+}
+.cafe-live {
+  animation: cafe-live 2s ease-in-out infinite;
+}
+@keyframes cafe-hint {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+.cafe-hint {
+  animation: cafe-hint 2.6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .cafe-label,
+  .cafe-bubble,
+  .cafe-talk span,
+  .cafe-drawer,
+  .cafe-scrim,
+  .cafe-live,
+  .cafe-hint,
+  .cafe-panel,
   .intro-link,
   .fade-in,
   .animate-pulse {

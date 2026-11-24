@@ -80,12 +80,23 @@ export function MatchCard({ founderId, rec, onLookAgain }: { founderId: string; 
 
       {done === "accept" ? (
         <div role="status" className="fade-in mt-5 rounded-2xl bg-sand px-[15px] py-[14px]">
-          <p className="mt-1.5 text-[14.5px] leading-relaxed">Introduction made — say hello.</p>
           {conversationId ? (
-            <ButtonLink href={`/messages/${conversationId}`} className="mt-3">
-              Open conversation
-            </ButtonLink>
-          ) : null}
+            <>
+              <p className="mt-1.5 text-[14.5px] leading-relaxed">You both said yes. Say hello.</p>
+              <ButtonLink href={`/messages/${conversationId}`} className="mt-3">
+                Open conversation
+              </ButtonLink>
+            </>
+          ) : (
+            <>
+              <p className="mt-1.5 text-[14.5px] leading-relaxed">
+                We&rsquo;ve asked {p.name.split(" ")[0]}. Messages open once they say yes too. Nobody is connected automatically.
+              </p>
+              <ButtonLink href="/people/connections" variant="secondary" className="mt-3">
+                See your requests
+              </ButtonLink>
+            </>
+          )}
         </div>
       ) : done === "decline" ? (
         <div role="status" className="fade-in mt-5 rounded-2xl bg-sand px-[15px] py-[14px]">

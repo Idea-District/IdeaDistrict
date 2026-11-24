@@ -12,7 +12,7 @@ export function Label({
   className?: string;
   as?: "p" | "span" | "h2" | "h3";
 }) {
-  const color = tone === "ember" ? "text-ember" : tone === "light" ? "text-cream/70" : "text-ink3";
+  const color = tone === "ember" ? "text-ember-deep" : tone === "light" ? "text-cream/70" : "text-ink3";
   return (
     <Tag className={`text-[10.5px] font-bold uppercase leading-tight tracking-[0.14em] ${color} ${className}`}>
       {children}

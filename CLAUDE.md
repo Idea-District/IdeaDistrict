@@ -32,8 +32,12 @@ Full context: `docs/specs/01-project-context.md`. Settled decisions: `docs/specs
   route. Prompts live in `prompt_versions` (defaults in `app/prompts/*.md`). Every call is logged to
   `ai_calls`. New AI tools are added as providers in `app/services/ai/providers/`.
 - **Write to `interactions` for every user action**, from day one.
-- **Design:** regular sans (Archivo) = what the founder declared. Serif italic in ember (Newsreader,
-  class `inferred` on web) = what the system worked out. Ember is the system speaking, never decoration.
+- **Design (brand guidelines v01):** Persimmon #FF6038, Matte Black #191919, Muted Dust #7D6F6C,
+  Dry Beige #EBECDC, Forest Green #003D38; Avenir Next (Nunito Sans fallback on web). Regular text = what
+  the founder declared. Italic in deep Persimmon (class `inferred` on web) = what the system worked out.
+  Persimmon is the system speaking, never decoration; text on Persimmon is Matte Black, and Persimmon text
+  on light backgrounds uses `ember-deep`. Founder app shell: Cafe · District · People · Messages, with the
+  Quick Breaks room (toolkit) off the Cafe and Ask ID on every screen (`/ask`).
 - Counts and shapes are configuration (`SITUATIONS_PER_SESSION=5`), not hardcoded arrays.
 - Investor visibility defaults to **off** (opt-in consent).
 

@@ -5,10 +5,10 @@ import { useEffect, useId, useState } from "react";
 
 import type { Privacy } from "@idea-district/api-client";
 
-import { IdMark, Label, PhoneFrame, TabBar } from "@/components/ui";
+import { Label, AppShell } from "@/components/ui";
+import { ProfileCard } from "@/features/me/ProfileCard";
 import { api } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
-import { useStored } from "@/lib/session";
 
 type Field = keyof Privacy;
 
@@ -78,7 +78,6 @@ function Switch({
 
 /** "You": name, a way into the ID, and consent switches stored by the API. */
 export function YouScreen({ founderId }: { founderId: string }) {
-  const name = useStored("founderName");
   const [privacy, setPrivacy] = useState<Privacy | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
@@ -119,20 +118,17 @@ export function YouScreen({ founderId }: { founderId: string }) {
   const shown = privacy ?? defaults;
 
   return (
-    <PhoneFrame footer={<TabBar />}>
-      <div className="flex items-center gap-4">
-        <IdMark />
-        <div>
-          <Label tone="neutral">You</Label>
-          <h1 className="text-[26px] font-extrabold tracking-[-0.03em]">{name ?? " "}</h1>
-        </div>
-      </div>
+    <AppShell>
+      <Label tone="neutral" className="mb-3">
+        You
+      </Label>
+      <ProfileCard founderId={founderId} />
 
       <Link
         href="/id"
-        className="mt-6 flex items-center justify-between rounded-xl border border-rule bg-card px-3.5 py-3 text-[14.5px] font-bold hover:border-ink3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember"
+        className="mt-2 flex min-h-[48px] items-center justify-between rounded-xl border border-rule bg-card px-3.5 py-3 text-[14.5px] font-bold hover:border-ink3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember"
       >
-        Open my ID <span aria-hidden className="text-ember">→</span>
+        Open my ID <span aria-hidden className="text-ember-deep">→</span>
       </Link>
 
       <section className="mt-6 rounded-2xl bg-sand px-[15px] py-[6px]">
@@ -159,6 +155,6 @@ export function YouScreen({ founderId }: { founderId: string }) {
         </p>
       ) : null}
       <p className="mt-3 text-[12.5px] leading-relaxed text-ink3">You always see exactly what an investor sees.</p>
-    </PhoneFrame>
+    </AppShell>
   );
 }

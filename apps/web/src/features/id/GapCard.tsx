@@ -50,7 +50,7 @@ export function GapCard({ gap, founderId }: { gap: Gap; founderId: string }) {
         <span className="mt-1 block text-[13px] leading-relaxed text-ink2">{gap.why_it_matters}</span>
         <span className="mt-3 flex items-center justify-between border-t border-rule py-2.5 text-[12.5px] font-bold text-ink3 group-hover:text-ink">
           {gap.status === "probing" ? "Explored once · explore again" : "One optional situation"}
-          <span aria-hidden className="text-[16px] text-ember">
+          <span aria-hidden className="text-[16px] text-ember-deep">
             →
           </span>
         </span>

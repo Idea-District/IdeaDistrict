@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from app.db.base import utcnow
 from app.models import IdAttribute, NoMatchLog, Recommendation, User
 from app.schemas.demo import MatchOut, NoMatchOut, RespondIn
-from app.services import interactions, messaging, privacy
+from app.services import interactions, privacy
 from app.services.ai.client import AIClient
 from app.services.errors import Conflict, NotFound
 from app.services.founders import founder_context
@@ -140,21 +140,27 @@ def _passed_on_reason(names: list[str]) -> str:
     return f"You passed on {listed}. Nobody else here fits as well yet."
 
 
-def respond(db: Session, recommendation_id: uuid.UUID, data: RespondIn) -> uuid.UUID | None:
-    """Returns the conversation id when an introduction is accepted."""
+def respond(db: Session, recommendation_id: uuid.UUID, data: RespondIn) -> dict:
+    """Accepting a suggestion sends the other person a request: messages open only when they
+    accept too. Returns {conversation_id, request_id, waiting_for_them}."""
+    from app.services import (
+        connect,  # local: connect imports messaging, which imports this module's peers
+    )
+
     rec = db.get(Recommendation, recommendation_id)
     if rec is None or rec.user_a_id != data.founder_id:
         raise NotFound("Recommendation not found.")
-    if rec.status == "accepted" and data.response == "accept":  # retried request
-        return messaging.open_for(db, rec).id
-    rec.status = "accepted" if data.response == "accept" else "declined"
-    rec.responded_at = utcnow()
-    interactions.record(
-        db, f"recommendation_{rec.status}", user_id=data.founder_id, entity_type="recommendation", entity_id=rec.id
-    )
-    conversation_id = messaging.open_for(db, rec).id if rec.status == "accepted" else None
-    db.commit()
-    return conversation_id
+    if data.response == "decline":
+        rec.status = "declined"
+        rec.responded_at = utcnow()
+        interactions.record(db, "recommendation_declined", user_id=data.founder_id, entity_type="recommendation", entity_id=rec.id)
+        db.commit()
+        return {"conversation_id": None, "request_id": None, "waiting_for_them": False}
+    if rec.status != "accepted":
+        rec.status = "accepted"
+        rec.responded_at = utcnow()
+        interactions.record(db, "recommendation_accepted", user_id=data.founder_id, entity_type="recommendation", entity_id=rec.id)
+    return connect.request_for_suggestion(db, rec)
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────

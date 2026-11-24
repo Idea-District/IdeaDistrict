@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { ButtonLink, CalmState, ReadStrength, ErrorNotice, IdMark, Label, PhoneFrame, TabBar, Tag } from "@/components/ui";
+import { AppBar, ButtonLink, CalmState, ReadStrength, ErrorNotice, IdMark, Label, AppShell, Tag } from "@/components/ui";
 
 import { GapCards } from "./GapCard";
 import { RingsTrue } from "./RingsTrue";
@@ -29,15 +29,15 @@ export function IdMap({ founderId }: { founderId: string }) {
 
   if (!data) {
     return (
-      <PhoneFrame footer={<TabBar />}>
+      <AppShell>
         {error ? <ErrorNotice message={error} onRetry={retry} /> : <CalmState title="Opening your ID…" />}
-      </PhoneFrame>
+      </AppShell>
     );
   }
 
   if (!data.built_at) {
     return (
-      <PhoneFrame footer={<TabBar />}>
+      <AppShell>
         <IdMark />
         <h1 className="mt-6 text-[26px] font-extrabold tracking-[-0.03em]">Your ID isn&rsquo;t built yet.</h1>
         <p className="mt-2 text-[15px] text-ink2">Finish discovery and we&rsquo;ll put it together.</p>
@@ -47,7 +47,7 @@ export function IdMap({ founderId }: { founderId: string }) {
             Back to discovery
           </ButtonLink>
         </div>
-      </PhoneFrame>
+      </AppShell>
     );
   }
 
@@ -55,7 +55,8 @@ export function IdMap({ founderId }: { founderId: string }) {
   const openGaps = data.gaps.filter((g) => g.status !== "closed");
 
   return (
-    <PhoneFrame footer={<TabBar />}>
+    <AppShell>
+      <AppBar backHref="/district" backLabel="My District" />
       <header className="flex items-start justify-between gap-4 pb-5">
         <div>
           <Label tone="neutral">Your ID</Label>
@@ -103,7 +104,7 @@ export function IdMap({ founderId }: { founderId: string }) {
           ))}
         </ul>
         <Link href="/id/person" className={`${linkRow} mt-3`}>
-          See how we read you <span aria-hidden className="text-ember">→</span>
+          See how we read you <span aria-hidden className="text-ember-deep">→</span>
         </Link>
       </Cluster>
 
@@ -118,7 +119,7 @@ export function IdMap({ founderId }: { founderId: string }) {
             <GapCards gaps={openGaps} founderId={founderId} limit={3} />
             {openGaps.length > 3 ? (
               <Link href="/id/gaps" className={`${linkRow} mt-3`}>
-                See all {openGaps.length} <span aria-hidden className="text-ember">→</span>
+                See all {openGaps.length} <span aria-hidden className="text-ember-deep">→</span>
               </Link>
             ) : null}
           </>
@@ -134,9 +135,9 @@ export function IdMap({ founderId }: { founderId: string }) {
 
       <RingsTrue founderId={founderId} saved={data.rings_true} />
 
-      <ButtonLink href="/for-you" className="mt-6">
+      <ButtonLink href="/people" className="mt-6">
         See who you should meet
       </ButtonLink>
-    </PhoneFrame>
+    </AppShell>
   );
 }

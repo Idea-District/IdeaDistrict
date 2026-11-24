@@ -1,36 +1,40 @@
 /**
  * Idea District design tokens (from the 18-screens design).
  *
- * The one rule that carries the product: regular sans text is what the founder
- * DECLARED. Serif italic in ember is what the system WORKED OUT. They never mix.
+ * The one rule that carries the product: regular text is what the founder
+ * DECLARED. Italic in Persimmon is what the system WORKED OUT. They never mix.
  * Ember marks the system speaking (signals, confidence, inferences) and is
  * never used decoratively.
  */
 
 export const colors = {
-  surround: "#D5CDBA", // behind the app (prototype v0.2); softer on the eyes than a near-white page
-  screen: "#F7F3EA", // the app surface
-  cream: "#F5F1EA",
-  card: "#FFFFFF",
-  sand: "#EBE6DA", // secondary surfaces
-  sand2: "#F7F3EA",
-  ink: "#21150B", // espresso, primary text
-  ink2: "#565B57",
-  ink3: "#8E8579",
-  rule: "#D5CDBA",
-  rule2: "#E4DED1",
-  ember: "#FE4202", // the system speaking
-  emberDeep: "#9C3305", // observed text on light backgrounds
-  emberTint: "#FDEDE5",
-  espresso: "#21150B", // dark "why we're asking" panels
-  espresso2: "#2D2117",
-  good: "#3F6B4A", // high confidence
-  mid: "#9A6212", // medium confidence
+  // Brand guidelines v01 (Nov 2026): Persimmon, Matte Black, Muted Dust, Dry Beige, Forest Green.
+  surround: "#E2E3D0", // behind the app on wide screens, a shade under Dry Beige
+  screen: "#EBECDC", // Dry Beige, the app surface
+  cream: "#F7F7EF",
+  card: "#FBFBF6",
+  sand: "#E1E2CF", // secondary surfaces
+  sand2: "#F3F3E8",
+  ink: "#191919", // Matte Black, primary text
+  ink2: "#4F4644", // Muted Dust, deepened for body text contrast
+  ink3: "#6B5E5B", // Muted Dust, deepened to pass 4.5:1 on Dry Beige
+  dust: "#7D6F6C", // Muted Dust as in the guidelines, for large text and shapes only
+  rule: "#D3D4C0",
+  rule2: "#DFE0CC",
+  ember: "#FF6038", // Persimmon: the system speaking. Fills and marks; text on it is Matte Black
+  emberDeep: "#B83A17", // Persimmon deepened for text on light backgrounds
+  emberTint: "#FFE4DA",
+  emberLight: "#FF8566", // Persimmon lifted for text on Forest Green or Matte Black
+  espresso: "#003D38", // Forest Green: dark panels (the orbit map, "why we're asking")
+  espresso2: "#0B4A44",
+  good: "#003D38", // consistent pattern
+  mid: "#8A5A12", // emerging pattern
 } as const;
 
 export const fonts = {
-  ui: "Archivo", // 700/800 for headings, letter-spacing ≈ -0.03em
-  inferred: "Newsreader", // italic only, for anything the system worked out
+  ui: "Avenir Next", // brand typeface; Nunito Sans is the web fallback where Avenir Next is not installed
+  display: "Grift", // brand display face; licensed font, falls back to the UI face until it is supplied
+  inferred: "Avenir Next", // italic, in Persimmon: anything the system worked out
 } as const;
 
 export const radii = { sm: 10, md: 12, lg: 16, xl: 26 } as const;

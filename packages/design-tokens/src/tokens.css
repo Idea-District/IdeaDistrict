@@ -1,21 +1,25 @@
-/* Same values as src/index.ts, as CSS variables for the web app. Keep them in sync. */
+/* Same values as src/index.ts, as CSS variables for the web app. Keep them in sync.
+   Brand guidelines v01: Persimmon #ff6038, Matte Black #191919, Muted Dust #7d6f6c,
+   Dry Beige #ebecdc, Forest Green #003d38. */
 :root {
-  --surround: #d5cdba; /* behind the app, as in prototype v0.2 — softer than a near-white page */
-  --screen: #f7f3ea; /* the app surface */
-  --cream: #f5f1ea;
-  --card: #ffffff;
-  --sand: #ebe6da;
-  --sand2: #f7f3ea;
-  --ink: #21150b;
-  --ink2: #565b57;
-  --ink3: #8e8579;
-  --rule: #d5cdba;
-  --rule2: #e4ded1;
-  --ember: #fe4202;
-  --ember-deep: #9c3305;
-  --ember-tint: #fdede5;
-  --espresso: #21150b;
-  --espresso2: #2d2117;
-  --good: #3f6b4a;
-  --mid: #9a6212;
+  --surround: #e2e3d0;
+  --screen: #ebecdc; /* Dry Beige */
+  --cream: #f7f7ef;
+  --card: #fbfbf6;
+  --sand: #e1e2cf;
+  --sand2: #f3f3e8;
+  --ink: #191919; /* Matte Black */
+  --ink2: #4f4644;
+  --ink3: #6b5e5b;
+  --dust: #7d6f6c; /* Muted Dust: large text and shapes only */
+  --rule: #d3d4c0;
+  --rule2: #dfe0cc;
+  --ember: #ff6038; /* Persimmon: fills and marks; text on it is Matte Black */
+  --ember-deep: #b83a17; /* Persimmon for text on light backgrounds */
+  --ember-tint: #ffe4da;
+  --ember-light: #ff8566; /* Persimmon lifted for text on Forest Green or Matte Black */
+  --espresso: #003d38; /* Forest Green */
+  --espresso2: #0b4a44;
+  --good: #003d38;
+  --mid: #8a5a12;
 }

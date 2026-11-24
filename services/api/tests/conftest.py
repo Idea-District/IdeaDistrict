@@ -6,6 +6,7 @@ os.environ["DATABASE_URL"] = "sqlite+pysqlite:///:memory:"
 os.environ["AI_PROVIDER"] = "mock"
 os.environ["SITUATIONS_PER_SESSION"] = "5"
 os.environ["OUTCOME_SURVEY_DELAY_DAYS"] = "12"
+os.environ["ADMIN_TOKEN"] = "test-admin-token"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

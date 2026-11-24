@@ -6,7 +6,14 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db.base import iso, utcnow
-from app.models import Conversation, ConversationParticipant, Message, Recommendation, User
+from app.models import (
+    ConnectionRequest,
+    Conversation,
+    ConversationParticipant,
+    Message,
+    Recommendation,
+    User,
+)
 from app.schemas.demo import ChatMessageOut, ConversationOut, ConversationSummaryOut
 from app.services import interactions
 from app.services.errors import NotFound
@@ -27,6 +34,20 @@ def open_for(db: Session, rec: Recommendation) -> Conversation:
     return convo
 
 
+def open_for_request(db: Session, req: ConnectionRequest) -> Conversation:
+    """Idempotent: one conversation per accepted connection request."""
+    existing = db.scalar(select(Conversation).where(Conversation.origin_request_id == req.id))
+    if existing:
+        return existing
+    convo = Conversation(origin_request_id=req.id)
+    db.add(convo)
+    db.flush()
+    for user_id in (req.from_user_id, req.to_user_id):
+        db.add(ConversationParticipant(conversation_id=convo.id, user_id=user_id))
+    interactions.record(db, "conversation_opened", user_id=req.to_user_id, entity_type="conversation", entity_id=convo.id)
+    return convo
+
+
 def list_for(db: Session, founder_id: uuid.UUID) -> list[ConversationSummaryOut]:
     rows = db.execute(
         select(Conversation, ConversationParticipant)
@@ -36,7 +57,7 @@ def list_for(db: Session, founder_id: uuid.UUID) -> list[ConversationSummaryOut]
     )
     out = []
     for convo, me in rows:
-        rec = db.get(Recommendation, convo.origin_recommendation_id)
+        other, origin, _ = _context(db, convo, founder_id)
         last = db.scalar(select(Message).where(Message.conversation_id == convo.id).order_by(Message.sent_at.desc()))
         unread_q = select(func.count()).where(Message.conversation_id == convo.id, Message.sender_id != founder_id)
         if me.last_read_at:
@@ -44,8 +65,8 @@ def list_for(db: Session, founder_id: uuid.UUID) -> list[ConversationSummaryOut]
         out.append(
             ConversationSummaryOut(
                 id=convo.id,
-                with_=person_card(db, _other(db, rec, founder_id)),
-                origin=_origin(db, rec, founder_id),
+                with_=person_card(db, other),
+                origin=origin,
                 last_message=last.body if last else None,
                 last_message_at=iso(last.sent_at) if last else None,
                 unread=db.scalar(unread_q) or 0,
@@ -56,15 +77,15 @@ def list_for(db: Session, founder_id: uuid.UUID) -> list[ConversationSummaryOut]
 
 def read(db: Session, conversation_id: uuid.UUID, founder_id: uuid.UUID) -> ConversationOut:
     convo, me = _membership(db, conversation_id, founder_id)
-    rec = db.get(Recommendation, convo.origin_recommendation_id)
+    other, origin, introduced_at = _context(db, convo, founder_id)
     messages = db.scalars(select(Message).where(Message.conversation_id == convo.id).order_by(Message.sent_at))
     me.last_read_at = utcnow()
     db.commit()
     return ConversationOut(
         id=convo.id,
-        with_=person_card(db, _other(db, rec, founder_id)),
-        origin=_origin(db, rec, founder_id),
-        introduced_at=iso(rec.responded_at or rec.created_at),
+        with_=person_card(db, other),
+        origin=origin,
+        introduced_at=introduced_at,
         messages=[_message_out(m, founder_id) for m in messages],
     )
 
@@ -94,6 +115,18 @@ def _membership(db: Session, conversation_id: uuid.UUID, founder_id: uuid.UUID):
     if convo is None or me is None:
         raise NotFound("Conversation not found.")
     return convo, me
+
+
+def _context(db: Session, convo: Conversation, founder_id: uuid.UUID) -> tuple[User, str, str]:
+    """(the other person, how this conversation started, when) for either kind of origin."""
+    if convo.origin_recommendation_id:
+        rec = db.get(Recommendation, convo.origin_recommendation_id)
+        return _other(db, rec, founder_id), _origin(db, rec, founder_id), iso(rec.responded_at or rec.created_at)
+    req = db.get(ConnectionRequest, convo.origin_request_id)
+    other_id = req.to_user_id if req.from_user_id == founder_id else req.from_user_id
+    other = db.get(User, other_id)
+    asker = "You" if req.from_user_id == founder_id else db.get(User, req.from_user_id).name
+    return other, f"{asker} asked to connect and both of you agreed", iso(req.responded_at or req.created_at)
 
 
 def _other(db: Session, rec: Recommendation, founder_id: uuid.UUID) -> User:

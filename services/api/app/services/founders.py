@@ -55,4 +55,18 @@ def founder_context(db: Session, founder: User) -> dict[str, str]:
     notes = tell_me_more_notes(db, founder.id)
     if notes:
         context["more_about_them"] = " | ".join(notes)
+    edits = own_corrections(db, founder.id)
+    if edits:
+        context["their_own_corrections"] = " | ".join(edits)
     return context
+
+
+def own_corrections(db: Session, founder_id: uuid.UUID) -> list[str]:
+    """Edits the founder made in their District rooms, oldest first. They override older answers."""
+    return list(
+        db.scalars(
+            select(ContextAnswer.answer_text)
+            .where(ContextAnswer.user_id == founder_id, ContextAnswer.question_key == "state_edit")
+            .order_by(ContextAnswer.answered_at)
+        )
+    )

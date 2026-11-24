@@ -44,10 +44,10 @@ export function SituationCard({
               disabled={disabled}
               onClick={() => onSelect(o.id)}
               className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-[15px] leading-snug transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember ${
-                on ? "border-ember bg-ember text-white" : "border-rule bg-card text-ink hover:border-ink3"
+                on ? "border-ember bg-ember text-ink" : "border-rule bg-card text-ink hover:border-ink3"
               }`}
             >
-              <span className={`w-4 shrink-0 font-bold ${on ? "text-white" : "text-ink3"}`}>{letter(i)}</span>
+              <span className={`w-4 shrink-0 font-bold ${on ? "text-ink" : "text-ink3"}`}>{letter(i)}</span>
               <span>{o.text}</span>
             </button>
           );

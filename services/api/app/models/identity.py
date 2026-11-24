@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Uuid
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TableMixin, utcnow
@@ -24,6 +24,9 @@ class User(TableMixin, Base):
     user_type: Mapped[str] = mapped_column(String(20), default="founder")  # founder | investor | admin
     onboarding_stage: Mapped[str] = mapped_column(String(30), default="context")
     last_active_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    one_line: Mapped[str | None] = mapped_column(String(200))  # how they describe themselves, on their profile
+    # The 2D avatar they built from choices (role, personality, style, colour). No photo is ever uploaded.
+    avatar_json: Mapped[str | None] = mapped_column(Text)
 
 
 class UserPrivacySettings(TableMixin, Base):

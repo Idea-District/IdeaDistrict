@@ -1,76 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, type KeyboardEvent } from "react";
 
-import type { Conversation } from "@idea-district/api-client";
-
-import { AppBar, CalmState, ErrorNotice, PhoneFrame } from "@/components/ui";
+import { AppBar, AppShell, CalmState, ErrorNotice } from "@/components/ui";
 import { PendingOutcomes } from "@/features/recommendations/PendingOutcomes";
-import { api } from "@/lib/api";
-import { errorMessage } from "@/lib/errors";
 import { personLine, shortDate, shortTime } from "@/lib/format";
 
-const POLL_MS = 15_000;
+import { useThread } from "./useThread";
 
 /** One conversation, opened by an introduction. */
 export function Thread({ founderId, conversationId }: { founderId: string; conversationId: string }) {
-  const [convo, setConvo] = useState<Conversation | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [draft, setDraft] = useState("");
-  const [sending, setSending] = useState(false);
-  const [sendError, setSendError] = useState<string | null>(null);
+  const { convo, error, load, draft, setDraft, sending, sendError, send } = useThread(founderId, conversationId);
   const endRef = useRef<HTMLDivElement>(null);
   const composerId = useId();
-
-  const load = useCallback(
-    () =>
-      api.conversation(conversationId, founderId).then(
-        (c) => {
-          setConvo(c);
-          setError(null);
-        },
-        (e) => setError(errorMessage(e)),
-      ),
-    [conversationId, founderId],
-  );
-
-  // Fetch on show, every 15 s while visible, and when the tab becomes visible again.
-  useEffect(() => {
-    let live = true;
-    const refresh = () => {
-      if (live && document.visibilityState === "visible") void load();
-    };
-    refresh();
-    const t = window.setInterval(refresh, POLL_MS);
-    document.addEventListener("visibilitychange", refresh);
-    return () => {
-      live = false;
-      window.clearInterval(t);
-      document.removeEventListener("visibilitychange", refresh);
-    };
-  }, [load]);
 
   const count = convo?.messages.length ?? 0;
   useEffect(() => {
     if (count) endRef.current?.scrollIntoView({ block: "end" });
   }, [count]);
-
-  async function send(e?: FormEvent) {
-    e?.preventDefault();
-    const body = draft.trim();
-    if (!body || sending) return;
-    setSending(true);
-    setSendError(null);
-    try {
-      const msg = await api.sendMessage(conversationId, founderId, body);
-      setConvo((c) => (c && !c.messages.some((m) => m.id === msg.id) ? { ...c, messages: [...c.messages, msg] } : c));
-      setDraft("");
-    } catch (err) {
-      setSendError(errorMessage(err));
-    } finally {
-      setSending(false);
-    }
-  }
 
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
@@ -81,10 +28,10 @@ export function Thread({ founderId, conversationId }: { founderId: string; conve
 
   if (!convo) {
     return (
-      <PhoneFrame>
+      <AppShell>
         <AppBar backHref="/messages" backLabel="Messages" />
         {error ? <ErrorNotice message={error} onRetry={() => void load()} /> : <CalmState title="Opening the conversation…" />}
-      </PhoneFrame>
+      </AppShell>
     );
   }
 
@@ -111,7 +58,7 @@ export function Thread({ founderId, conversationId }: { founderId: string; conve
         <button
           type="submit"
           disabled={sending || !draft.trim()}
-          className="h-[44px] shrink-0 rounded-xl bg-ember px-4 text-[14.5px] font-bold text-white transition-opacity disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember"
+          className="h-[44px] shrink-0 rounded-xl bg-ink px-4 text-[14.5px] font-bold text-cream transition-opacity disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember"
         >
           {sending ? "…" : "Send"}
         </button>
@@ -120,14 +67,14 @@ export function Thread({ founderId, conversationId }: { founderId: string; conve
   );
 
   return (
-    <PhoneFrame footer={composer} className="pb-4">
+    <AppShell footer={composer} className="pb-4">
       <AppBar backHref="/messages" backLabel={convo.with.name} />
       <p className="-mt-4 mb-4 text-[12.5px] text-ink3">{personLine(convo.with)}</p>
 
       <PendingOutcomes founderId={founderId} withName={convo.with.name} className="mb-4" />
 
       <div className="rounded-r-2xl border-l-[3px] border-ember bg-sand px-[14px] py-[12px]">
-        <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-ember">
+        <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-ember-deep">
           Introduced {shortDate(convo.introduced_at)}
         </p>
         <p className="inferred mt-1 text-[15.5px] leading-snug">{convo.origin}</p>
@@ -138,7 +85,7 @@ export function Thread({ founderId, conversationId }: { founderId: string; conve
           <li key={m.id} className={`flex flex-col ${m.from_me ? "items-end" : "items-start"}`}>
             <p
               className={`max-w-[82%] whitespace-pre-wrap break-words px-3.5 py-2.5 text-[14.5px] leading-snug ${
-                m.from_me ? "rounded-2xl rounded-br-[5px] bg-ember text-white" : "rounded-2xl rounded-bl-[5px] bg-sand text-ink"
+                m.from_me ? "rounded-2xl rounded-br-[5px] bg-espresso text-cream" : "rounded-2xl rounded-bl-[5px] bg-sand text-ink"
               }`}
             >
               {m.body}
@@ -151,6 +98,6 @@ export function Thread({ founderId, conversationId }: { founderId: string; conve
         <p className="mt-4 text-center text-[13px] text-ink3">No messages yet. Say hello.</p>
       ) : null}
       <div ref={endRef} />
-    </PhoneFrame>
+    </AppShell>
   );
 }

@@ -14,7 +14,7 @@ class ContextAnswer(TableMixin, Base):
     __tablename__ = "context_answers"
 
     user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    question_key: Mapped[str] = mapped_column(String(40))  # name | working_on | hoping_for | in_the_way | tell_me_more
+    question_key: Mapped[str] = mapped_column(String(40))  # name | working_on | hoping_for | in_the_way | tell_me_more | state_edit
     answer_choice: Mapped[str | None] = mapped_column(String(80))
     answer_text: Mapped[str] = mapped_column(Text)
     answered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

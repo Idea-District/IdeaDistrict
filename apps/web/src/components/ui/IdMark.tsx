@@ -7,7 +7,7 @@ export function IdMark({ size = 44, className = "" }: { size?: number; className
       viewBox={brandMark.viewBox}
       width={Math.round(size * brandMark.aspectRatio)}
       height={size}
-      className={`shrink-0 text-ember ${className}`}
+      className={`shrink-0 text-ink ${className}`}
       fill="currentColor"
       role="img"
       aria-label="Idea District"

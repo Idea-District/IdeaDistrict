@@ -1,20 +1,49 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { Recommendation } from "@idea-district/api-client";
 
-import { CalmState, ErrorNotice, PhoneFrame, Section, TabBar } from "@/components/ui";
+import { CalmState, ErrorNotice, AppShell, Section } from "@/components/ui";
 import { api } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
+import { PeopleLinks } from "@/features/people/PeopleLinks";
+import { SceneBoundary } from "@/features/cafe/scene/SceneBoundary";
+import { setViewMode, useViewMode } from "@/features/cafe/scene/viewMode";
+import { useLoad } from "@/features/cafe/shared";
+import { islanders } from "@/features/people/scene/layout";
+import { useStored } from "@/lib/session";
 
 import { GapSuggestions } from "./GapSuggestions";
 import { MatchCard } from "./MatchCard";
 import { PendingOutcomes } from "./PendingOutcomes";
 import { TellMeMore } from "./TellMeMore";
 
+/** The 3D archipelago loads only in the browser, and only on this page. */
+const PeopleScene = dynamic(() => import("@/features/people/scene/PeopleScene"), {
+  ssr: false,
+  loading: () => (
+    <div className="fixed inset-0 flex flex-col items-center justify-center gap-5 bg-espresso text-cream">
+      <span aria-hidden className="flex gap-2">
+        <span className="pixel h-3.5 w-3.5 animate-pulse" />
+        <span className="pixel h-3.5 w-3.5 animate-pulse [animation-delay:150ms]" />
+        <span className="pixel h-3.5 w-3.5 animate-pulse [animation-delay:300ms]" />
+      </span>
+      <p className="text-[15px] font-semibold tracking-wide">Setting sail…</p>
+    </div>
+  ),
+});
+
+const VIEW_KEY = "people-view";
+
 /** Screens 13–14: one intersection, or an honest no-match with Tell me more. */
 export function ForYou({ founderId }: { founderId: string }) {
+  const view = useViewMode(VIEW_KEY);
+  const name = useStored("founderName");
+  const conns = useLoad(() => api.connections(founderId), founderId);
+  const explore = useLoad(() => api.explore(founderId), founderId);
+  const opps = useLoad(() => api.opportunities(founderId), founderId);
   const [rec, setRec] = useState<Recommendation | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -47,8 +76,23 @@ export function ForYou({ founderId }: { founderId: string }) {
     window.scrollTo({ top: 0 });
   }
 
-  return (
-    <PhoneFrame footer={<TabBar />}>
+  const people = useMemo(
+    () => islanders(conns.data?.connected ?? [], conns.data?.in_talks ?? [], explore.data?.picks ?? [], rec?.kind === "match" ? rec.person.name : null),
+    [conns.data, explore.data, rec],
+  );
+
+  const list = (
+    <AppShell>
+      {view === "list" ? (
+        <button
+          type="button"
+          onClick={() => setViewMode(VIEW_KEY, "3d")}
+          className="mb-5 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[12px] bg-ember text-[15px] font-bold text-ink hover:bg-ink hover:text-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember"
+        >
+          Sail out to the people around you in 3D <span aria-hidden>↗</span>
+        </button>
+      ) : null}
+      <PeopleLinks founderId={founderId} className="mb-6" />
       <PendingOutcomes founderId={founderId} className="mb-6" />
       {!rec ? (
         error ? (
@@ -98,6 +142,25 @@ export function ForYou({ founderId }: { founderId: string }) {
           <GapSuggestions founderId={founderId} />
         </div>
       )}
-    </PhoneFrame>
+    </AppShell>
+  );
+
+  if (view === "list") return list;
+  return (
+    <SceneBoundary fallback={list}>
+      <PeopleScene
+        founderId={founderId}
+        name={name ?? "You"}
+        rec={rec}
+        recError={error}
+        people={people}
+        connections={conns.data}
+        opportunities={opps.data ?? []}
+        reloadConnections={conns.retry}
+        onLookAgain={lookAgain}
+        fallback={list}
+        onListView={() => setViewMode(VIEW_KEY, "list")}
+      />
+    </SceneBoundary>
   );
 }

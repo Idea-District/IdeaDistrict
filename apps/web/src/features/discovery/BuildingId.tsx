@@ -44,7 +44,7 @@ export function BuildingId({ founderId }: { founderId: string }) {
         if (!live) return;
         setFinished(true);
         setActive(steps.length);
-        go = window.setTimeout(() => router.replace("/id"), 900);
+        go = window.setTimeout(() => router.replace("/district"), 900);
       },
       (e) => {
         buildRef.current = null;

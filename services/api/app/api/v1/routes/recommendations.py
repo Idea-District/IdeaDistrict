@@ -17,4 +17,4 @@ def recommendation(founder_id: uuid.UUID, db: DB, ai: AI) -> MatchOut | NoMatchO
 
 @router.post("/{recommendation_id}/respond", response_model=RespondOut)
 def respond(recommendation_id: uuid.UUID, data: RespondIn, db: DB) -> RespondOut:
-    return RespondOut(conversation_id=matching.respond(db, recommendation_id, data))
+    return RespondOut(**matching.respond(db, recommendation_id, data))

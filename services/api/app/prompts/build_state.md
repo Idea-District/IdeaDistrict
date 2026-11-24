@@ -8,6 +8,7 @@ Write:
   - facet: "primary" (main venture) or "secondary" (other skills or roles).
   - source: "declared" if they said it outright, "inferred" if you worked it out.
   Always include at least one "need" and one "offer".
+  If their_own_corrections is present, the founder edited these themselves in their District: they are DECLARED, "high" confidence, and override anything older. Keep every item they set, and leave out anything they removed.
 - gaps: 3 or 4 things we do not know yet. Each has
   - dimension: e.g. "Conflict handling", "Long-term ambition", "Delegation".
   - question: a short, conversational question in second person, under 8 words, everyday words — e.g. "How do you approach partnerships?", "How do you handle disagreement?", "What do you want in three years?". No jargon, no stacked clauses.

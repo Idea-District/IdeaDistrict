@@ -4,9 +4,9 @@ type Kind = "declared" | "unknown" | "observed" | "new" | "plain";
 
 const kinds: Record<Kind, string> = {
   declared: "bg-rule text-ink",
-  unknown: "bg-ember text-white",
+  unknown: "bg-ember text-ink",
   observed: "bg-espresso text-cream",
-  new: "bg-ember text-white",
+  new: "bg-ember text-ink",
   plain: "bg-ember-tint text-ember-deep",
 };
 

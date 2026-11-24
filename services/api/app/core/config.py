@@ -26,7 +26,12 @@ class Settings(BaseSettings):
     # Set to 0 for demos so the survey appears straight away.
     outcome_survey_delay_days: int = 12
 
-    cors_origins: str = "http://localhost:3100,http://localhost:8081"
+    # The Cafe runs on India time: "today's" Daily Brew changes at midnight IST.
+    cafe_timezone: str = "Asia/Kolkata"
+    # Shared secret for the team's admin console (sent as X-Admin-Token). Empty = admin is off.
+    admin_token: str = ""
+
+    cors_origins: str = "http://localhost:3100,http://localhost:8081,http://localhost:8082"
 
     @field_validator("database_url")
     @classmethod

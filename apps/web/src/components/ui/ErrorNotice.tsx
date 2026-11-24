@@ -12,7 +12,7 @@ export function ErrorNotice({
 }) {
   return (
     <div role="alert" className="rounded-2xl border border-ember/40 bg-ember-tint px-[15px] py-[14px]">
-      <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-ember">Something went wrong</p>
+      <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-ember-deep">Something went wrong</p>
       <p className="mt-1 text-[14px] leading-relaxed text-ink">{message}</p>
       {onRetry ? (
         <Button variant="dark" className="mt-3" onClick={onRetry}>

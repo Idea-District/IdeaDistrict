@@ -29,6 +29,16 @@ def founder_with_match(client, db):
     return founder_id, rec, vikram
 
 
+
+def accept_both(client, rec_id: str, founder_id: str, other_id: str) -> str:
+    """The founder accepts ID's suggestion; the other person accepts the request it sends."""
+    first = client.post(f"/v1/recommendations/{rec_id}/respond", json={"founder_id": founder_id, "response": "accept"}).json()
+    assert first["conversation_id"] is None and first["waiting_for_them"] is True
+    req = client.get("/v1/connections", params={"founder_id": other_id}).json()["received"][0]
+    assert req["origin"] == "suggestion" and "ID suggested" in req["note"]
+    done = client.post(f"/v1/connections/requests/{req['id']}/respond", json={"founder_id": other_id, "accept": True}).json()
+    return done["conversation_id"]
+
 def test_rings_true_is_saved_on_the_id(client, founder_with_match):
     founder_id, _, _ = founder_with_match
     assert client.get("/v1/id", params={"founder_id": founder_id}).json()["rings_true"] is None
@@ -59,8 +69,7 @@ def test_paused_members_are_never_suggested(client, db, founder_with_match):
 
 def test_accepted_introduction_opens_a_conversation(client, founder_with_match):
     founder_id, rec, vikram = founder_with_match
-    convo_id = client.post(f"/v1/recommendations/{rec['id']}/respond",
-                           json={"founder_id": founder_id, "response": "accept"}).json()["conversation_id"]
+    convo_id = accept_both(client, rec["id"], founder_id, str(vikram.id))
     # Retrying the accept returns the same conversation.
     again = client.post(f"/v1/recommendations/{rec['id']}/respond",
                         json={"founder_id": founder_id, "response": "accept"}).json()
@@ -86,8 +95,15 @@ def test_accepted_introduction_opens_a_conversation(client, founder_with_match):
 
 
 def test_outcome_survey_validates_evidence(client, db, founder_with_match, monkeypatch):
-    founder_id, rec, _ = founder_with_match
-    client.post(f"/v1/recommendations/{rec['id']}/respond", json={"founder_id": founder_id, "response": "accept"})
+    founder_id, rec, vikram = founder_with_match
+    first = client.post(f"/v1/recommendations/{rec['id']}/respond", json={"founder_id": founder_id, "response": "accept"})
+    assert first.json()["waiting_for_them"] is True
+    # Not asked while the other person hasn't agreed, even with no delay.
+    monkeypatch.setattr(get_settings(), "outcome_survey_delay_days", 0)
+    assert client.get("/v1/outcomes/pending", params={"founder_id": founder_id}).json() == []
+    monkeypatch.setattr(get_settings(), "outcome_survey_delay_days", 12)
+    req = client.get("/v1/connections", params={"founder_id": str(vikram.id)}).json()["received"][0]
+    client.post(f"/v1/connections/requests/{req['id']}/respond", json={"founder_id": str(vikram.id), "accept": True})
 
     # Not due yet with the real 12-day delay.
     assert client.get("/v1/outcomes/pending", params={"founder_id": founder_id}).json() == []
@@ -106,8 +122,8 @@ def test_outcome_survey_validates_evidence(client, db, founder_with_match, monke
 
 
 def test_no_meeting_is_not_counted(client, founder_with_match, monkeypatch):
-    founder_id, rec, _ = founder_with_match
-    client.post(f"/v1/recommendations/{rec['id']}/respond", json={"founder_id": founder_id, "response": "accept"})
+    founder_id, rec, vikram = founder_with_match
+    accept_both(client, rec["id"], founder_id, str(vikram.id))
     monkeypatch.setattr(get_settings(), "outcome_survey_delay_days", 0)
     result = client.post(f"/v1/recommendations/{rec['id']}/outcome",
                          json={"founder_id": founder_id, "did_meet": False}).json()
@@ -122,7 +138,7 @@ def test_after_accepting_the_next_suggestion_is_someone_new(client, db, founder_
     db.add(IdAttribute(user_id=farah.id, dimension="Ops", insight="Runs field teams.", confidence="medium",
                        strength=0.5, evidence_summary="3 of 5", version=1))
     db.commit()
-    client.post(f"/v1/recommendations/{rec['id']}/respond", json={"founder_id": founder_id, "response": "accept"})
+    accept_both(client, rec["id"], founder_id, str(vikram.id))
 
     nxt = client.get("/v1/recommendations", params={"founder_id": founder_id}).json()
     assert nxt["kind"] == "match" and nxt["person"]["name"] == "Farah Siddiqui"  # Vikram is already introduced

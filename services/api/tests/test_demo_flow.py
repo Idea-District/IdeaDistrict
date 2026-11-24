@@ -104,7 +104,8 @@ def test_match_with_another_founder_and_respond(client, db):
 
     accepted = client.post(f"/v1/recommendations/{rec['id']}/respond",
                            json={"founder_id": founder_id, "response": "accept"}).json()
-    assert accepted["ok"] is True and accepted["conversation_id"]
+    # Both must agree: the conversation opens once the other person accepts the request.
+    assert accepted["ok"] is True and accepted["conversation_id"] is None and accepted["waiting_for_them"] is True
     assert db.get(Recommendation, _uuid(rec["id"])).status == "accepted"
 
 

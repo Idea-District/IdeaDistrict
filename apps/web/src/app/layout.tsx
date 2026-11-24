@@ -1,13 +1,9 @@
 import type { Metadata } from "next";
-import { Archivo, Newsreader } from "next/font/google";
+import { Nunito_Sans } from "next/font/google";
 import "./globals.css";
 
-const archivo = Archivo({ variable: "--font-archivo", subsets: ["latin"] });
-const newsreader = Newsreader({
-  variable: "--font-newsreader",
-  subsets: ["latin"],
-  style: ["italic"],
-});
+/* The brand face is Avenir Next (installed on Apple devices). Nunito Sans stands in elsewhere. */
+const nunito = Nunito_Sans({ variable: "--font-fallback", subsets: ["latin"], style: ["normal", "italic"] });
 
 export const metadata: Metadata = {
   title: { default: "Idea District", template: "%s · Idea District" },
@@ -16,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en-GB" className={`${archivo.variable} ${newsreader.variable} h-full`}>
+    <html lang="en-GB" className={`${nunito.variable} h-full`}>
       <body className="flex min-h-full flex-col font-sans">{children}</body>
     </html>
   );

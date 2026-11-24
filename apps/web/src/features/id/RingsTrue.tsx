@@ -54,7 +54,7 @@ export function RingsTrue({ founderId, saved }: { founderId: string; saved: Answ
               aria-checked={on}
               onClick={() => pick(a.value)}
               className={`rounded-xl border py-2.5 text-[14px] font-bold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember ${
-                on ? "border-ember bg-ember text-white" : "border-rule bg-card text-ink hover:border-ink3"
+                on ? "border-ember bg-ember text-ink" : "border-rule bg-card text-ink hover:border-ink3"
               }`}
             >
               {a.label}

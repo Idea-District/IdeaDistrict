@@ -39,7 +39,7 @@ function Chips<T extends string | boolean>({
               disabled={disabled}
               onClick={() => onPick(o.value)}
               className={`rounded-full border px-4 py-2 text-[13.5px] font-bold transition-colors duration-150 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember ${
-                on ? "border-ember bg-ember text-white" : "border-rule bg-card text-ink hover:border-ink3"
+                on ? "border-ember bg-ember text-ink" : "border-rule bg-card text-ink hover:border-ink3"
               }`}
             >
               {o.label}

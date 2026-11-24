@@ -109,6 +109,42 @@ FIXTURES: dict[str, object] = {
         "person": [],
         "acknowledgement": "This means we can introduce you to founders who need what you know, not only people who can help your venture.",
     },
+    "draft_brews": {
+        "questions": [
+            "What did a customer teach you this month that you didn't expect?",
+            "Which decision this week would you make differently with hindsight?",
+            "What is one thing you stopped doing that made your week better?",
+        ]
+    },
+    "simulate": {
+        "paths": [
+            {"key": "A", "title": "Build it now", "summary": "Spend the next six weeks building what the customer asked for.",
+             "tradeoffs": [{"label": "Time", "text": "Six weeks with no other product work."},
+                           {"label": "Cash", "text": "One paying customer from week seven."},
+                           {"label": "Learning", "text": "You learn if she renews, not if others need it."}],
+             "watch_for": "She delays signing once it is built."},
+            {"key": "B", "title": "Ask five owners first", "summary": "Spend a week asking five similar owners whether they would pay for it.",
+             "tradeoffs": [{"label": "Time", "text": "About a week of calls and visits."},
+                           {"label": "Cash", "text": "No new revenue this month."},
+                           {"label": "Learning", "text": "You learn whether it is a pattern or one request."}],
+             "watch_for": "Polite yeses with no one willing to pay up front."},
+        ],
+        "question": "How many of the five would need to say yes for you to build it?",
+        "grounded_in": "Your stated hardest problem",
+    },
+    "meet": {
+        "you_may_bring": "What three small food units told you about stock-outs and paying up front.",
+        "they_may_bring": "Experience setting up distribution partnerships with manufacturers.",
+        "why_it_may_matter": "You are both trying to reach the same small manufacturers, from different sides.",
+        "confidence": "low",
+        "rests_on": "Your stated need and what they chose to share",
+    },
+    "ask_id": {
+        "reply": "From your District: the hardest part right now is finding your first paying customers.\nTwo things worth checking before you decide: has anyone else asked for this, and is there a smaller version they would still pay for?",
+        "rests_on": "Your stated hardest problem",
+        "strength": "low",
+        "suggestions": ["Test this as an assumption", "Who has faced this?"],
+    },
     "match": {
         "match": "M1",
         "match_type": "NEED → CAPABILITY",

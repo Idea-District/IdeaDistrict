@@ -8,12 +8,16 @@ from app.db.base import Base, TableMixin, utcnow
 
 
 class Conversation(TableMixin, Base):
-    """Opened only by an accepted recommendation — there is no cold messaging."""
+    """Opened only when both people agreed (an accepted introduction or request): no cold messaging."""
 
     __tablename__ = "conversations"
 
-    origin_recommendation_id: Mapped[uuid.UUID] = mapped_column(
+    # Exactly one origin: an accepted introduction, or an accepted connection request.
+    origin_recommendation_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid, ForeignKey("recommendations.id", ondelete="CASCADE"), unique=True
+    )
+    origin_request_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("connection_requests.id", ondelete="CASCADE"), unique=True
     )
     last_message_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

@@ -174,8 +174,214 @@ def _seed_members(members: list[dict], user_type: str) -> int:
     return added
 
 
+# ── Cafe sample content (Daily Brew, Open Table, What's On) ──────────────
+
+CAFE_BREWS = [
+    "What did a customer teach you this month that you didn't expect?",
+    "Which decision this week would you make differently with hindsight?",
+    "What is one thing you stopped doing that made your week better?",
+    "Who outside your team helped you most this month, and how?",
+    "What did you learn from the last 'no' you heard?",
+    "Which assumption about your market are you least sure of right now?",
+    "What small win this week would you otherwise overlook?",
+]
+
+CAFE_TABLES = [
+    ("First 10 customers", "How did you find the first people who paid you? What would you skip if you started again?", 0),
+    ("Raising your first round", "What do you wish you had known before your first investor meeting?", None),
+    ("First hires", "Who was your first hire, and what did they teach you about hiring?", None),
+    ("What to build next", "How do you decide between a customer's request and your own roadmap?", None),
+    ("Pricing your first plan", "Bring your pricing page, or your guess at one. We'll pressure-test it together.", 2),
+]
+
+CAFE_POSTS = [
+    "Our first five came from one WhatsApp group of shop owners. Not one from cold email.",
+    "I'd skip the free pilots. The ones who paid from day one gave far better feedback.",
+    "Asking for a small amount up front filtered out the polite yeses very quickly.",
+]
+
+CAFE_ANSWERS = [
+    "That owners care more about not running out on a Saturday than about saving money. Changed our whole pitch.",
+    "A kirana owner told me she trusts a voice note more than a dashboard. We're testing that this week.",
+    "That the person who uses the tool is rarely the one who pays for it.",
+]
+
+
+def seed_cafe() -> int:
+    """Idempotent: adds sample Cafe content only when the Cafe is empty."""
+    from datetime import timedelta
+
+    from app.db.base import utcnow
+    from app.models import Brew, BrewAnswer, CafeTable, TablePost, TableSeat, WhatsOn
+    from app.services.cafe import cafe_today
+
+    with SessionLocal() as db:
+        if db.scalar(select(Brew.id).limit(1)):
+            return 0
+        today = cafe_today()
+        brews = [Brew(question=q, publish_on=today + timedelta(days=i - 1)) for i, q in enumerate(CAFE_BREWS)]
+        db.add_all(brews)
+        members = list(db.scalars(select(User).where(User.email.like(f"%@{DEMO_EMAIL_DOMAIN}"), User.user_type == "founder").limit(8)))
+        tables = []
+        for title, prompt, days in CAFE_TABLES:
+            starts = None if days is None else utcnow() + timedelta(days=days, hours=2)
+            status = "open" if days in (None, 0) else "scheduled"
+            t = CafeTable(title=title, prompt=prompt, status=status, starts_at=None if days == 0 else starts)
+            tables.append(t)
+        db.add_all(tables)
+        db.flush()
+        todays = brews[1]
+        for m, body in zip(members[:3], CAFE_ANSWERS, strict=False):
+            db.add(BrewAnswer(brew_id=todays.id, user_id=m.id, body=body))
+        first = tables[0]
+        for m in members[:5]:
+            db.add(TableSeat(table_id=first.id, user_id=m.id))
+        for m, body in zip(members[:3], CAFE_POSTS, strict=False):
+            db.add(TablePost(table_id=first.id, user_id=m.id, body=body))
+        db.add_all(
+            [
+                WhatsOn(kind="event", title="Open Table: pricing your first plan", detail="Bring your pricing page, or your guess at one.",
+                        starts_at=tables[4].starts_at, place="Online", table_id=tables[4].id),
+                WhatsOn(kind="event", title="Founder walk", detail="An easy hour, no slides. Meet at the bandstand.",
+                        starts_at=utcnow() + timedelta(days=4), place="Cubbon Park"),
+                WhatsOn(kind="open_call", title="Pilot call: food manufacturers association",
+                        detail="A regional association is looking for an inventory tool to pilot with 20 members."),
+                WhatsOn(kind="table", title="New table: First hires", detail="Who was your first hire, and what did they teach you?",
+                        table_id=tables[2].id),
+            ]
+        )
+        db.commit()
+        return 1
+
+
+# ── Explore industries: sample reads (patterns to check, never statistics) ──
+
+INDUSTRY_TOPICS = [
+    {
+        "title": "How small food manufacturers buy software", "category": "market", "minutes": 4,
+        "tags": "food,manufactur,inventory,factory,unit,owners",
+        "summary": "Who decides, what they compare you with, and the objections you are likely to hear.",
+        "sections": [
+            {"heading": "Who decides", "body": "In a small unit the owner usually decides, but the person who keeps the stock book often decides whether it gets used. Meet both early."},
+            {"heading": "What they compare you with", "body": "Rarely another product. More often a notebook, a WhatsApp group and a trusted supervisor. Your real competitor is the habit that already works well enough."},
+            {"heading": "Objections you may hear", "body": "\"We'll try it after the festive season.\" \"My staff won't use a phone app.\" \"What happens when the internet is down?\" Each one is worth a direct answer before the demo, not after."},
+            {"heading": "What tends to move a decision", "body": "Seeing a unit like theirs using it, a price that feels small next to one bad week of stock-outs, and a first week where someone helps them set it up."},
+        ],
+        "questions": ["Who in the unit would feel the change first?", "What does one stock-out actually cost them?", "Which objection have you not answered yet?"],
+    },
+    {
+        "title": "Pricing your first plan", "category": "business_model", "minutes": 3,
+        "tags": "pricing,price,plan,subscription,customers,paying",
+        "summary": "Per unit, per user or flat: what each one signals, and how to test a price without guessing.",
+        "sections": [
+            {"heading": "What each model signals", "body": "Per user says the value grows with the team. Per unit or per location says it grows with the business. Flat says it is simple. Pick the one that matches how your customer already thinks about cost."},
+            {"heading": "Test, don't guess", "body": "Offer two prices to similar customers and watch who signs, not who says it sounds fair. A small upfront payment tells you more than a long free pilot."},
+            {"heading": "Leave room to change", "body": "Early prices are hypotheses. Tell first customers they are founding prices and you will learn together."},
+        ],
+        "questions": ["What does your customer already pay for the problem today?", "Which two prices could you test this month?"],
+    },
+    {
+        "title": "Selling to small businesses in India", "category": "market", "minutes": 4,
+        "tags": "kirana,shop,sme,small,business,retail,distributor,msme",
+        "summary": "Trust travels through people. Where your first customers are likely to come from.",
+        "sections": [
+            {"heading": "Trust travels through people", "body": "Owners often buy because someone they know uses it. A single respected owner in a market or association can open more doors than any campaign."},
+            {"heading": "Show up where they already are", "body": "Trade associations, wholesale markets and existing WhatsApp groups tend to work better than cold outreach. Ask to be introduced rather than introducing yourself."},
+            {"heading": "Make the first week easy", "body": "Setup help, a voice note in their language and a quick check-in after three days often decide whether the product sticks."},
+        ],
+        "questions": ["Who is the one owner others in your market listen to?", "What would make your first week effortless for them?"],
+    },
+    {
+        "title": "Circular supply chains", "category": "market", "minutes": 3,
+        "tags": "circular,climate,sustainab,material,waste,recycl,supply",
+        "summary": "Where waste becomes someone else's input, and why partnerships matter more than technology here.",
+        "sections": [
+            {"heading": "The idea", "body": "One business's waste becomes another's raw material. The hard part is rarely the technology; it is reliable volume, quality and logistics between the two."},
+            {"heading": "Where founders get stuck", "body": "Promising buyers before supply is steady, or collecting supply before a buyer has committed. Most early wins come from a single dependable pair."},
+            {"heading": "Questions buyers ask", "body": "Is the quality consistent? Can you deliver every month? What happens if you cannot? Have answers before the first meeting."},
+        ],
+        "questions": ["Who is your one dependable pair to start with?", "What would make your supply steady enough to promise?"],
+    },
+    {
+        "title": "Marketplaces vs software tools", "category": "business_model", "minutes": 3,
+        "tags": "marketplace,platform,saas,software,tool,b2b",
+        "summary": "Two different businesses that often get confused. What each needs to work.",
+        "sections": [
+            {"heading": "A tool earns from use", "body": "A software tool is valuable to one customer on day one. It grows customer by customer, and retention is the number to watch."},
+            {"heading": "A marketplace earns from matches", "body": "A marketplace is only valuable when both sides are there. Early on you are usually doing the matching by hand."},
+            {"heading": "Which are you, really?", "body": "Many founders start as a tool for one side and add the second side later. Being honest about which you are now changes who you should talk to this week."},
+        ],
+        "questions": ["Is your product useful to one customer on day one?", "If you are a marketplace, which side do you bring first?"],
+    },
+]
+
+
+def seed_topics() -> int:
+    """Idempotent by slug."""
+    import json
+
+    from app.models import IndustryTopic
+    from app.services.topics_admin import slugify
+
+    added = 0
+    with SessionLocal() as db:
+        for t in INDUSTRY_TOPICS:
+            slug = slugify(t["title"])
+            if db.scalar(select(IndustryTopic.id).where(IndustryTopic.slug == slug)):
+                continue
+            db.add(IndustryTopic(slug=slug, title=t["title"], category=t["category"], minutes=t["minutes"], summary=t["summary"],
+                                 sections_json=json.dumps(t["sections"]), questions_json=json.dumps(t["questions"]), tags=t["tags"]))
+            added += 1
+        db.commit()
+    return added
+
+
+# ── People: sample opportunities, and sample members' shared rooms ───────
+
+OPPORTUNITIES = [
+    {"kind": "pilot_call", "title": "Inventory tool pilot for 20 member units", "posted_by": "Karnataka Food Processors Association (sample)",
+     "summary": "The association wants to pilot one inventory and reorder tool with 20 small member units this quarter.",
+     "what_they_need": "A tool owners can use on a phone, works in Kannada or English, and a named person for setup in week one.",
+     "timeline": "Shortlist in December, pilot January to March", "how_to_respond": "Express interest with two lines on what you'd offer the 20 units.",
+     "tags": "inventory,food,manufactur,stock,units"},
+    {"kind": "challenge", "title": "Cut cold-chain waste for small dairies", "posted_by": "Idea District (sample)",
+     "summary": "Small dairies lose stock between collection and the chiller. Ideas, pilots or partners welcome.",
+     "what_they_need": "Low-cost ways to track temperature and time at collection points.", "timeline": "Open until the end of January",
+     "how_to_respond": "Express interest and say which part you'd take on.", "tags": "cold,dairy,logistics,waste,supply"},
+    {"kind": "problem", "title": "Kirana owners want credit they can trust", "posted_by": "Idea District (sample)",
+     "summary": "Several kirana owners in the community told us informal credit is their biggest weekly headache.",
+     "what_they_need": "Founders who are building, or want to build, around small-shop credit and ledgers.", "timeline": "Ongoing",
+     "how_to_respond": "Express interest to join a small working group.", "tags": "kirana,credit,ledger,shop,retail"},
+    {"kind": "circle", "title": "First-time B2B sellers circle", "posted_by": "Idea District",
+     "summary": "Six founders selling to businesses for the first time, meeting every other Thursday evening.",
+     "what_they_need": "Founders in their first year of B2B sales.", "timeline": "Every other Thursday, 7 pm",
+     "how_to_respond": "Express interest and the team will introduce you.", "tags": "b2b,sales,customers,selling,pricing"},
+]
+
+
+def seed_people() -> int:
+    """Idempotent. Opportunities when there are none; sample members share Business and Needs with the community."""
+    from app.models import Opportunity, RoomVisibility
+
+    added = 0
+    with SessionLocal() as db:
+        if not db.scalar(select(Opportunity.id).limit(1)):
+            db.add_all([Opportunity(**o) for o in OPPORTUNITIES])
+            added += len(OPPORTUNITIES)
+        members = db.scalars(select(User).where(User.email.like(f"%@{DEMO_EMAIL_DOMAIN}"), User.user_type == "founder"))
+        for m in members:
+            for room in ("business", "needs"):
+                if not db.scalar(select(RoomVisibility.id).where(RoomVisibility.user_id == m.id, RoomVisibility.room == room)):
+                    db.add(RoomVisibility(user_id=m.id, room=room, audience="community"))
+        db.commit()
+    return added
+
+
 if __name__ == "__main__":
     print(
         f"Seeded {seed_prompts()} prompt(s), {seed_demo_founders()} founder(s) "
         f"and {seed_demo_investors()} investor(s)."
     )
+    print(f"Cafe sample content: {'added' if seed_cafe() else 'already there'}.")
+    print(f"Industry reads added: {seed_topics()}.")
+    print(f"Opportunities added: {seed_people()}.")
