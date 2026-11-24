@@ -3,6 +3,7 @@
 import uuid
 
 from app.models import ConnectionRequest, User
+from app.services.investor import sector_hits
 from tests.test_gap_probes import _founder_with_id
 
 
@@ -92,3 +93,12 @@ def test_investor_posts_opportunity_and_sees_interest(client):
     client.post(f"/v1/opportunities/{oid}/respond", json={"founder_id": fid, "interested": True, "note": "Raising in Jan"})
     mine = client.get("/v1/investor/opportunities", params={"investor_id": inv}).json()
     assert mine[0]["interested"][0]["note"] == "Raising in Jan"
+
+
+def test_thesis_fit_understands_related_words():
+    riya = "Scheduling and billing software for physiotherapy clinics in Bengaluru Six free pilot clinics onboarded"
+    assert sector_hits({"healthtech", "saas"}, riya) == ["healthtech", "saas"]
+    assert sector_hits({"fintech", "d2c", "climate"}, riya) == []
+    assert sector_hits({"agritech"}, "Cold storage for dairy farmers") == ["agritech"]
+    # A sector the investor typed in themselves still matches on its own name.
+    assert sector_hits({"insurtech"}, "Insurtech for two-wheeler owners") == ["insurtech"]

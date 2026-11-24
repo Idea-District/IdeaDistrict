@@ -105,13 +105,40 @@ def visible_to_investor(db: Session, founder_id: uuid.UUID) -> list[str]:
     return district.investor_rooms(db, founder_id)
 
 
+# Words that show a founder works in a sector, matched as the start of a word ("physio" matches
+# "physiotherapy"). A sector the investor typed themselves falls back to its own name.
+SECTOR_WORDS: dict[str, tuple[str, ...]] = {
+    "fintech": ("fintech", "financ", "payment", "lending", "loan", "credit", "bank", "insur", "invoic", "wealth"),
+    "healthtech": ("health", "clinic", "hospital", "physio", "patient", "medic", "doctor", "pharma", "therap", "diagnos", "wellness", "dental"),
+    "edtech": ("edtech", "educat", "school", "student", "teach", "tutor", "course", "college", "learner"),
+    "climate": ("climate", "carbon", "solar", "energy", "renewab", "emission", "sustainab", "recycl"),
+    "saas": ("saas", "software", "platform", "subscription", "cloud", "workflow", "automat"),
+    "inventory": ("inventor", "warehouse", "stock", "supply"),
+    "logistics": ("logistic", "shipping", "deliver", "freight", "fleet", "courier", "supply"),
+    "d2c": ("brand", "consumer", "retail", "ecommerce", "apparel", "beauty", "skincare"),
+    "agritech": ("agri", "farm", "crop", "dairy", "rural", "harvest"),
+    "deeptech": ("deeptech", "robot", "drone", "hardware", "semicond", "quantum", "sensor", "chip"),
+    "mobility": ("mobility", "vehicle", "transport", "scooter", "commut"),
+}
+
+
+def sector_hits(sectors: set[str], text: str) -> list[str]:
+    """The investor's sectors that the founder's own words point to, in a stable order."""
+    words = set(_WORD.findall(text.lower()))
+    hits = []
+    for s in sorted(sectors):
+        stems = SECTOR_WORDS.get(s) or (s[:5],)
+        if any(w.startswith(stem) for stem in stems for w in words):
+            hits.append(s)
+    return hits
+
+
 def _thesis_fit(db: Session, inv: User, founder: User) -> str | None:
     t = _thesis_row(db, inv)
-    sectors = {s for s in t.sectors.split(",") if s}
+    sectors = {s.strip().lower() for s in t.sectors.split(",") if s.strip()}
     text = " ".join(db.scalars(select(IdState.value).where(IdState.user_id == founder.id, IdState.superseded_at.is_(None),
                                                            IdState.field.in_(("project", "stage")))))
-    words = set(_WORD.findall(text.lower()))
-    hits = sorted(s for s in sectors if any(w.startswith(s[:5]) for w in words))
+    hits = sector_hits(sectors, text)
     return ", ".join(hits) if hits else None
 
 
