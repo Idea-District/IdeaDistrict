@@ -3,6 +3,11 @@ from functools import lru_cache
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# TEMPORARY (2026-11-25): the admin console's token until there is an admin login system.
+# Anyone who can read this repository can sign in to the admin with it, so replace it with
+# proper admin logins (or set ADMIN_TOKEN on the host) before the product opens up.
+TEMPORARY_ADMIN_TOKEN = "id-admin-iWHiERNAOV-XJs0zNNabZqIUk7efgNif"
+
 
 class Settings(BaseSettings):
     """Every setting comes from the environment (or .env). Nothing secret in code."""
@@ -29,7 +34,8 @@ class Settings(BaseSettings):
     # The Cafe runs on India time: "today's" Daily Brew changes at midnight IST.
     cafe_timezone: str = "Asia/Kolkata"
     # Shared secret for the team's admin console (sent as X-Admin-Token). Empty = admin is off.
-    admin_token: str = ""
+    # The ADMIN_TOKEN setting wins; without one, the temporary token below is used.
+    admin_token: str = TEMPORARY_ADMIN_TOKEN
 
     cors_origins: str = "http://localhost:3100,http://localhost:8081,http://localhost:8082"
 
